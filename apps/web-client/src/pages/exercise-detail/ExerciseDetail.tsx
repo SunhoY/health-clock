@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ExerciseDetailView } from './ExerciseDetailView';
 import { EXERCISES_DATA, FORM_CONFIG, FormState, Exercise } from '../../types/exercise';
 
 export function ExerciseDetail() {
   const { bodyPart, exerciseId } = useParams<{ bodyPart: string; exerciseId: string }>();
+  const navigate = useNavigate();
   
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [formState, setFormState] = useState<FormState>({
@@ -102,7 +103,8 @@ export function ExerciseDetail() {
     };
 
     console.log('루틴 완료:', exerciseDetail);
-    // TODO: 루틴 완료 및 다음 화면으로 라우팅
+    // TODO: 루틴 데이터를 전역 상태나 라우터 상태로 전달
+    navigate('/routine-title');
   };
 
   if (!exercise) {

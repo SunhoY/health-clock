@@ -55,10 +55,54 @@ export interface FormConfig {
   };
 }
 
+export interface RoutineTitleForm {
+  title: string;
+  isValid: boolean;
+  error?: string;
+}
+
+export interface SaveRoutinePayload {
+  title: string;
+  exercises: ExerciseDetail[];
+  createdAt: Date;
+}
+
+export interface ValidationRules {
+  title: {
+    minLength: number;
+    maxLength: number;
+    pattern?: RegExp;
+    forbiddenWords?: string[];
+  };
+}
+
 export const FORM_CONFIG: FormConfig = {
   sets: { min: 1, max: 10, step: 1, default: 3 },
   weight: { min: 0, max: 500, step: 5, default: 20 },
   duration: { min: 1, max: 180, step: 1, default: 30 }
+};
+
+export const VALIDATION_RULES: ValidationRules = {
+  title: {
+    minLength: 1,
+    maxLength: 50,
+    pattern: /^[가-힣a-zA-Z0-9\s\-_]+$/,
+    forbiddenWords: ['undefined', 'null', 'test']
+  }
+};
+
+export const generateDefaultTitle = (exercises: ExerciseDetail[]): string => {
+  const bodyParts = [...new Set(exercises.map(ex => ex.bodyPart))];
+  const today = new Date().toLocaleDateString('ko-KR', { 
+    month: 'short', 
+    day: 'numeric' 
+  });
+  
+  if (bodyParts.length === 1) {
+    return `${bodyParts[0]} 루틴 (${today})`;
+  } else {
+    return `복합 루틴 (${today})`;
+  }
 };
 
 export const EXERCISES_DATA: ExercisesByBodyPart = {

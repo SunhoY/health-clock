@@ -4,6 +4,7 @@ import { PresetSelection } from '../pages/preset-selection';
 import { CreateRoutine } from '../pages/create-routine';
 import { ExerciseSelection } from '../pages/exercise-selection';
 import { ExerciseDetail } from '../pages/exercise-detail';
+import { RoutineTitle } from '../pages/routine-title';
 
 export function App() {
   return (
@@ -14,6 +15,7 @@ export function App() {
         <Route path="/create-routine" element={<CreateRoutine />} />
         <Route path="/exercise-selection/:bodyPart" element={<ExerciseSelection />} />
         <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
+        <Route path="/routine-title" element={<RoutineTitle />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
