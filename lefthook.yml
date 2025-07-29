@@ -1,0 +1,9 @@
+pre-push:
+  jobs:
+    - name: lint
+      run: pnpm nx run-many --target=lint --all
+    - name: typecheck
+      run: pnpm nx run-many --target=typecheck --all
+    - name: test
+      run: pnpm nx run-many --target=test --all
+    
