@@ -1,10 +1,11 @@
+import { useNavigate } from 'react-router-dom';
 import { HomeView } from './HomeView';
 
 export const Home = () => {
+  const navigate = useNavigate();
+
   const handleStartWorkout = () => {
-    // TODO: 프리셋 선택 화면으로 라우팅
-    // navigate('/preset-selection');
-    console.log('프리셋 선택 화면으로 이동');
+    navigate('/preset-selection');
   };
 
   return <HomeView onStartWorkout={handleStartWorkout} />;
