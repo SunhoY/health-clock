@@ -12,6 +12,55 @@ export interface ExercisesByBodyPart {
   [bodyPart: string]: Exercise[];
 }
 
+export interface ExerciseDetail {
+  exerciseId: string;
+  exerciseName: string;
+  bodyPart: string;
+  sets: number;
+  weight?: number; // 유산소 운동일 경우 null
+  duration?: number; // 유산소 운동일 경우 필수
+  restTime?: number; // 세트 간 휴식 시간 (기본값 설정)
+}
+
+export interface FormState {
+  sets: number;
+  weight: number;
+  duration: number;
+  isValid: boolean;
+  errors: {
+    sets?: string;
+    weight?: string;
+    duration?: string;
+  };
+}
+
+export interface FormConfig {
+  sets: {
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+  };
+  weight: {
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+  };
+  duration: {
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+  };
+}
+
+export const FORM_CONFIG: FormConfig = {
+  sets: { min: 1, max: 10, step: 1, default: 3 },
+  weight: { min: 0, max: 500, step: 5, default: 20 },
+  duration: { min: 1, max: 180, step: 1, default: 30 }
+};
+
 export const EXERCISES_DATA: ExercisesByBodyPart = {
   chest: [
     { id: 'bench-press', name: '벤치프레스', bodyPart: 'chest', equipment: ['바벨', '벤치'] },
