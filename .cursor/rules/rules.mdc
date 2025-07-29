@@ -1,0 +1,43 @@
+# 개발 규칙
+
+- 반드시 테스트부터 작성할 것
+- 반드시 스토리를 작성할 것
+- default export 보다 named export 를 사용할 것
+- 주석은 최소한으로 남길 것
+- 변수명을 줄여쓰지 말 것. verbose 해도 괜찮음
+- 모든 커밋은 테스트, tsc, lint 를 통과해야 함
+- Presentational Component 와 Controller Component 를 분리할 것
+- Clean Architecture 를 사용할 것
+- SOLID 원칙을 준수할 것
+
+# Coding Convention
+- 테스트 파일은 컴포넌트 파일와 같은 경로에 {ComponentName}.test.tsx 로 작성한다.
+- 스토리 파일은 컴포넌트 파일과 같은 경로에 {ComponentName}.stories.tsx 로 작성한다.
+- React 를 직접 import 하지 않는다.
+  - 예: import React from 'react'; // Not OK 
+  - 예: import { useState } from 'react' // OK
+- 각 컴포넌트는 자체 스타일을 가진다. 예를 들어 버튼이 있다면 자체적인 스타일을 가진다. 부모 컴포넌트에서 추가적인 스타일이 필요한 경우에만 부모 컴포넌트에서 추가 스타일을 지정한다.
+- 각 컴포넌트의 기본 속성은 Props 로 명명한다.
+
+# Folder - React
+- src/pages/{page} 위치에 최상단 Presentational, Controller 컴포넌트를 둔다.
+  - Controller 컴포넌트명은 page 명과 동일. 예: src/pages/home/Home.tsx
+- src/components 밑에 일반 컴포넌트를 둔다.
+- 도메인 특화 컴포넌트는 src/components/{domain} 에 둔다.
+
+# 테스트 원칙
+- 정적인 스타일은 테스트하지 않는다.
+  - css 로 :hover 등으로 스타일된 경우, 버튼에 실제로 hover 하여 테스트하지 않음 - css 의 기본 동작방식을 테스트하지 않는 원리임
+  - react 상태 관리를 통해 다른 컬러로 보여아하는 경우는 테스트한다.
+  - 정적인 정보(문자열, 숫자 등)의 유무를 테스트하지 않는다.
+    - 예: <span>Hello World</span> // Hello World 는 어떤 로직에 의해서도 변경되지 않는데, 이 값이 존재하는지 테스트하는 것은 의미가 없다.
+- private 함수를 테스트하는것은 지양한다. public 함수로 private 함수를 테스트할 수 있도록 코드 구조를 작성한다.
+- 테스트 제목은 한글로 작성한다.
+- 의미없는 describe 를 사용하지 않는다.
+  - SomeComponent 테스트에서 describe('SomeComponent') 같은 사용을 금한다.
+  - 분기가 필요한 경우, beforeEach 를 통해 복수의 테스트의 setup 을 할 수 있는 경우에만 사용한다.
+- data-testid 는 꼭 필요한 경우에만 사용한다. role 로 대체 가능한 경우는 role 을 사용한다.
+
+# 디자인 가이드
+- Material Design 을 기반으로 디자인한다.
+- 헬스장은 주로 어둡기 때문에 dart theme 으로 한다.
