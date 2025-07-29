@@ -3,13 +3,19 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { CreateRoutine } from './CreateRoutine';
 
+const mockNavigate = jest.fn();
+
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
-  useNavigate: () => jest.fn(),
+  useNavigate: () => mockNavigate,
 }));
 
 describe('CreateRoutine', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear();
+  });
+
   it('CreateRoutine 컴포넌트가 올바르게 렌더링된다', () => {
     render(
       <MemoryRouter>
@@ -30,7 +36,7 @@ describe('CreateRoutine', () => {
     expect(screen.getByText('유산소')).toBeInTheDocument();
   });
 
-  it('부위 선택 시 콘솔에 로그가 출력된다', async () => {
+  it('부위 선택 시 운동 선택 화면으로 라우팅된다', async () => {
     const user = userEvent.setup();
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
@@ -44,6 +50,7 @@ describe('CreateRoutine', () => {
     await user.click(chestButton);
     
     expect(consoleSpy).toHaveBeenCalledWith('선택된 부위:', 'chest');
+    expect(mockNavigate).toHaveBeenCalledWith('/exercise-selection/chest');
     consoleSpy.mockRestore();
   });
 

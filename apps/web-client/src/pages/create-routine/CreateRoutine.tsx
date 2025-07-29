@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { CreateRoutineView } from './CreateRoutineView';
 
 // 운동 부위 데이터
@@ -14,10 +15,11 @@ const BODY_PARTS = [
 ];
 
 export const CreateRoutine = () => {
+  const navigate = useNavigate();
+
   const handleBodyPartSelect = (bodyPartId: string) => {
-    // TODO: 선택된 부위 정보를 다음 화면으로 전달
     console.log('선택된 부위:', bodyPartId);
-    // navigate('/create-routine/exercise', { state: { bodyPartId } });
+    navigate(`/exercise-selection/${bodyPartId}`);
   };
 
   return (
