@@ -89,13 +89,14 @@ export interface WorkoutSession {
 }
 
 export interface CompletedSet {
-  exerciseId: string;
   setNumber: number;
+  exerciseId: string;
   weight?: number;
   reps?: number;
-  duration?: number;
-  restTime: number;
-  completedAt: Date;
+  duration?: number; // 초 단위
+  restTime?: number; // 휴식 시간 (초)
+  completedAt?: Date;
+  completed: boolean;
 }
 
 export interface TimerState {
@@ -194,3 +195,95 @@ export const EXERCISES_DATA: ExercisesByBodyPart = {
     { id: 'jump-rope', name: '줄넘기', bodyPart: 'cardio', equipment: ['줄넘기'] }
   ]
 }; 
+
+export interface WorkoutCompletionData {
+  sessionId: string;
+  completedAt: Date;
+  duration: number; // 전체 운동 시간 (분)
+  exercises: CompletedExercise[];
+  totalSets: number;
+  totalWeight?: number; // 총 중량 (kg)
+  totalCardioTime?: number; // 총 유산소 시간 (분)
+  caloriesBurned?: number; // 추정 소모 칼로리
+}
+
+export interface CompletedExercise {
+  exerciseId: string;
+  exerciseName: string;
+  bodyPart: string;
+  sets: CompletedSet[];
+  totalWeight?: number;
+  totalDuration?: number;
+}
+
+export interface CompletedSet {
+  setNumber: number;
+  weight?: number;
+  reps?: number;
+  duration?: number; // 초 단위
+  completed: boolean;
+}
+
+export interface CelebrationMessage {
+  id: string;
+  message: string;
+  emoji: string;
+  category: 'general' | 'strength' | 'cardio' | 'consistency';
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt: Date;
+  category: 'streak' | 'volume' | 'frequency' | 'personal_best';
+}
+
+export interface UserStatistics {
+  currentStreak?: number;
+  totalWorkouts?: number;
+  totalDuration?: number;
+} 
+
+export interface DailyWorkoutSummary {
+  date: Date;
+  totalSessions: number;
+  totalDuration: number; // 분
+  totalExercises: number;
+  totalSets: number;
+  totalWeight?: number; // kg
+  totalCardioTime?: number; // 분
+  estimatedCalories?: number;
+  exercises: ExerciseSummary[];
+}
+
+export interface ExerciseSummary {
+  exerciseId: string;
+  exerciseName: string;
+  bodyPart: string;
+  type: 'weight' | 'cardio';
+  totalSets: number;
+  totalWeight?: number;
+  totalDuration?: number;
+  avgWeight?: number;
+  maxWeight?: number;
+  sessions: string[]; // 세션 ID 목록
+}
+
+export interface WorkoutDisplayFormat {
+  weight: {
+    format: (exercise: ExerciseSummary) => string;
+  };
+  cardio: {
+    format: (exercise: ExerciseSummary) => string;
+  };
+}
+
+export interface SummaryStatistics {
+  workoutFrequency: number; // 이번 주 운동 횟수
+  weeklyProgress: number; // 주간 진행률 (%)
+  favoriteBodyPart: string; // 가장 많이 한 부위
+  strongestLift?: { exercise: string; weight: number };
+  longestCardio?: { exercise: string; duration: number };
+} 

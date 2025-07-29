@@ -6,6 +6,7 @@ import { ExerciseSelection } from '../pages/exercise-selection';
 import { ExerciseDetail } from '../pages/exercise-detail';
 import { RoutineTitle } from '../pages/routine-title';
 import { Workout } from '../pages/workout';
+import { WorkoutComplete } from '../pages/workout-complete';
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
         <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
         <Route path="/routine-title" element={<RoutineTitle />} />
         <Route path="/workout" element={<Workout />} />
+        <Route path="/workout-complete" element={<WorkoutComplete />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

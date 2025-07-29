@@ -150,12 +150,37 @@ export function Workout() {
           status: 'completed',
           completedSets: newCompletedSets
         }));
-        console.log('운동 완료:', {
+        const completionData = {
           sessionId: session.id,
-          completedSets: newCompletedSets,
-          totalTime: Date.now() - session.startTime.getTime()
-        });
-        navigate('/workout-complete');
+          completedAt: new Date(),
+          duration: Math.floor((Date.now() - session.startTime.getTime()) / 60000), // 분 단위
+          exercises: session.exercises.map(exercise => ({
+            exerciseId: exercise.exerciseId,
+            exerciseName: exercise.exerciseName,
+            bodyPart: exercise.bodyPart,
+                            sets: newCompletedSets
+                  .filter(set => set.exerciseId === exercise.exerciseId)
+                  .map(set => ({
+                    setNumber: set.setNumber,
+                    exerciseId: set.exerciseId,
+                    weight: set.weight,
+                    reps: set.reps,
+                    duration: set.duration,
+                    restTime: set.restTime,
+                    completedAt: set.completedAt,
+                    completed: true,
+                  })),
+            totalWeight: newCompletedSets
+              .filter(set => set.exerciseId === exercise.exerciseId)
+              .reduce((sum, set) => sum + (set.weight || 0), 0),
+          })),
+          totalSets: newCompletedSets.length,
+          totalWeight: newCompletedSets.reduce((sum, set) => sum + (set.weight || 0), 0),
+          caloriesBurned: Math.floor((Date.now() - session.startTime.getTime()) / 60000) * 5, // 추정 칼로리
+        };
+        
+        console.log('운동 완료:', completionData);
+        navigate('/workout-complete', { state: { completionData } });
         return;
       }
     }
