@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { WorkoutSummaryView } from './WorkoutSummaryView';
-import { DailyWorkoutSummary } from '../../types/exercise';
+import { DailyWorkoutSummary, ExerciseSummary } from '../../types/exercise';
 
 const mockSummary: DailyWorkoutSummary = {
   date: new Date('2024-01-01T10:00:00Z'),
@@ -194,7 +194,7 @@ describe('WorkoutSummaryView', () => {
     const noWeightSummary: DailyWorkoutSummary = {
       ...mockSummary,
       totalWeight: undefined,
-      exercises: mockSummary.exercises.map(ex => ({
+      exercises: mockSummary.exercises.map((ex: ExerciseSummary) => ({
         ...ex,
         totalWeight: undefined,
         avgWeight: undefined,
@@ -216,7 +216,7 @@ describe('WorkoutSummaryView', () => {
     const noCardioSummary: DailyWorkoutSummary = {
       ...mockSummary,
       totalCardioTime: undefined,
-      exercises: mockSummary.exercises.filter(ex => ex.type === 'weight'),
+      exercises: mockSummary.exercises.filter((ex: ExerciseSummary) => ex.type === 'weight'),
     };
 
     render(

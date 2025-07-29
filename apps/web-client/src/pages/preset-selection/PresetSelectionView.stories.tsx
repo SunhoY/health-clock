@@ -7,6 +7,10 @@ const meta: Meta<typeof PresetSelectionView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onPresetSelect: { action: 'preset selected' },
+    onAddWorkout: { action: 'add workout clicked' },
+  },
   tags: ['autodocs'],
 };
 
@@ -41,23 +45,11 @@ const mockPresets = [
 export const Default: Story = {
   args: {
     presets: mockPresets,
-    onPresetSelect: (presetId: string) => {
-      console.log('선택된 프리셋:', presetId);
-    },
-    onAddWorkout: () => {
-      console.log('새로운 루틴 만들기');
-    },
   },
 };
 
 export const Empty: Story = {
   args: {
     presets: [],
-    onPresetSelect: (presetId: string) => {
-      console.log('선택된 프리셋:', presetId);
-    },
-    onAddWorkout: () => {
-      console.log('새로운 루틴 만들기');
-    },
   },
 }; 

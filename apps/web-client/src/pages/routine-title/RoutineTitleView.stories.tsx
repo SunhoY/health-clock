@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { RoutineTitleView } from './RoutineTitleView';
-import { RoutineTitleForm } from '../../types/exercise';
 
 const meta: Meta<typeof RoutineTitleView> = {
   title: 'Pages/RoutineTitle/RoutineTitleView',
@@ -8,15 +7,18 @@ const meta: Meta<typeof RoutineTitleView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onTitleChange: { action: 'title changed' },
+    onSave: { action: 'save clicked' },
+    onCancel: { action: 'cancel clicked' },
+  },
   tags: ['autodocs'],
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const mockOnTitleChange = (title: string) => console.log('Title changed:', title);
-const mockOnSave = () => console.log('Save clicked');
-const mockOnCancel = () => console.log('Cancel clicked');
+
 
 export const Default: Story = {
   args: {
@@ -25,9 +27,6 @@ export const Default: Story = {
       isValid: true,
       error: undefined
     },
-    onTitleChange: mockOnTitleChange,
-    onSave: mockOnSave,
-    onCancel: mockOnCancel,
   },
 };
 
@@ -38,9 +37,6 @@ export const WithDefaultTitle: Story = {
       isValid: true,
       error: undefined
     },
-    onTitleChange: mockOnTitleChange,
-    onSave: mockOnSave,
-    onCancel: mockOnCancel,
   },
 };
 
@@ -51,9 +47,6 @@ export const WithError: Story = {
       isValid: false,
       error: '제목을 입력해주세요'
     },
-    onTitleChange: mockOnTitleChange,
-    onSave: mockOnSave,
-    onCancel: mockOnCancel,
   },
 };
 
@@ -64,8 +57,5 @@ export const EmptyState: Story = {
       isValid: false,
       error: undefined
     },
-    onTitleChange: mockOnTitleChange,
-    onSave: mockOnSave,
-    onCancel: mockOnCancel,
   },
 }; 

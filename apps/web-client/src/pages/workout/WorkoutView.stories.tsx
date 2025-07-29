@@ -8,17 +8,20 @@ const meta: Meta<typeof WorkoutView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onCompleteSet: { action: 'complete set clicked' },
+    onSkipRest: { action: 'skip rest clicked' },
+    onPauseWorkout: { action: 'pause workout clicked' },
+    onResumeWorkout: { action: 'resume workout clicked' },
+    onAbandonWorkout: { action: 'abandon workout clicked' },
+  },
   tags: ['autodocs'],
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const mockOnCompleteSet = () => console.log('세트 완료');
-const mockOnSkipRest = () => console.log('휴식 건너뛰기');
-const mockOnPauseWorkout = () => console.log('운동 일시정지');
-const mockOnResumeWorkout = () => console.log('운동 재개');
-const mockOnAbandonWorkout = () => console.log('운동 중단');
+
 
 const baseProgress: WorkoutProgress = {
   currentExercise: {
@@ -47,11 +50,6 @@ export const ActiveSet: Story = {
     progress: baseProgress,
     timerState: baseTimerState,
     isResting: false,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 };
 
@@ -60,11 +58,6 @@ export const RestPeriod: Story = {
     progress: baseProgress,
     timerState: baseTimerState,
     isResting: true,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 };
 
@@ -77,11 +70,6 @@ export const FirstSet: Story = {
     },
     timerState: baseTimerState,
     isResting: false,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 };
 
@@ -95,11 +83,6 @@ export const LastSet: Story = {
     },
     timerState: baseTimerState,
     isResting: false,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 };
 
@@ -108,11 +91,6 @@ export const WeightExercise: Story = {
     progress: baseProgress,
     timerState: baseTimerState,
     isResting: false,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 };
 
@@ -130,11 +108,6 @@ export const CardioExercise: Story = {
     },
     timerState: baseTimerState,
     isResting: false,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 };
 
@@ -146,10 +119,5 @@ export const PausedWorkout: Story = {
       isPaused: true
     },
     isResting: false,
-    onCompleteSet: mockOnCompleteSet,
-    onSkipRest: mockOnSkipRest,
-    onPauseWorkout: mockOnPauseWorkout,
-    onResumeWorkout: mockOnResumeWorkout,
-    onAbandonWorkout: mockOnAbandonWorkout,
   },
 }; 

@@ -8,6 +8,9 @@ const meta: Meta<typeof ExerciseSelectionView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onExerciseSelect: { action: 'exercise selected' },
+  },
   tags: ['autodocs'],
 };
 
@@ -18,7 +21,6 @@ export const Default: Story = {
   args: {
     selectedBodyPart: 'chest',
     exercises: EXERCISES_DATA.chest,
-    onExerciseSelect: (exercise) => console.log('Selected exercise:', exercise),
   },
 };
 
@@ -26,7 +28,6 @@ export const BackExercises: Story = {
   args: {
     selectedBodyPart: 'back',
     exercises: EXERCISES_DATA.back,
-    onExerciseSelect: (exercise) => console.log('Selected exercise:', exercise),
   },
 };
 
@@ -34,7 +35,6 @@ export const CardioExercises: Story = {
   args: {
     selectedBodyPart: 'cardio',
     exercises: EXERCISES_DATA.cardio,
-    onExerciseSelect: (exercise) => console.log('Selected exercise:', exercise),
   },
 };
 
@@ -42,6 +42,5 @@ export const EmptyState: Story = {
   args: {
     selectedBodyPart: 'unknown',
     exercises: [],
-    onExerciseSelect: (exercise) => console.log('Selected exercise:', exercise),
   },
 }; 

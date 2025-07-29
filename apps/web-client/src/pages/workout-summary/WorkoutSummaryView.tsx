@@ -77,7 +77,7 @@ export const WorkoutSummaryView = ({
         {/* 전체 통계 */}
         <div className="bg-gray-800 rounded-lg p-6">
           <h2 className="text-xl font-semibold text-center text-green-400 mb-6">
-            📊 오늘의 통계
+            <span role="img" aria-label="차트">📊</span> 오늘의 통계
           </h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -141,7 +141,7 @@ export const WorkoutSummaryView = ({
           {weightExercises.length > 0 && (
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-orange-400 mb-4">
-                💪 웨이트 운동
+                <span role="img" aria-label="근육">💪</span> 웨이트 운동
               </h3>
               <div className="space-y-3">
                 {weightExercises.map((exercise, index) => (
@@ -176,7 +176,7 @@ export const WorkoutSummaryView = ({
           {cardioExercises.length > 0 && (
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-green-400 mb-4">
-                ❤️ 유산소 운동
+                <span role="img" aria-label="하트">❤️</span> 유산소 운동
               </h3>
               <div className="space-y-3">
                 {cardioExercises.map((exercise, index) => (
@@ -205,7 +205,9 @@ export const WorkoutSummaryView = ({
           {/* 빈 상태 */}
           {summary.exercises.length === 0 && (
             <div className="bg-gray-800 rounded-lg p-12 text-center">
-              <div className="text-6xl mb-4">🏃‍♂️</div>
+              <div className="text-6xl mb-4">
+                <span role="img" aria-label="달리는 사람">🏃‍♂️</span>
+              </div>
               <h3 className="text-xl font-semibold text-gray-300 mb-2">
                 오늘은 운동 기록이 없어요
               </h3>

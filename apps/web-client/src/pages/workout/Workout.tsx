@@ -111,7 +111,8 @@ export function Workout() {
       weight: currentExercise.weight,
       duration: currentExercise.duration,
       restTime: currentExercise.restTime || 60,
-      completedAt: new Date()
+      completedAt: new Date(),
+      completed: true
     };
 
     const newCompletedSets = [...session.completedSets, completedSet];

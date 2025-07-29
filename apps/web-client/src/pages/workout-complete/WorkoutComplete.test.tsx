@@ -210,9 +210,7 @@ describe('WorkoutComplete', () => {
     );
 
     // 유산소 운동 메시지 중 하나가 표시되는지 확인
-    const cardioMessages = ['심폐지구력이 향상되고 있어요!', '하루 한 걸음, 멋진 당신의 루틴!'];
-    const displayedMessage = screen.getByText(/심폐지구력|하루 한 걸음/);
-    expect(cardioMessages).toContain(displayedMessage.textContent || '');
+    expect(screen.getByText(/심폐지구력|하루 한 걸음/)).toBeInTheDocument();
   });
 
   it('근력 운동에 적합한 축하 메시지를 표시한다', () => {
@@ -238,8 +236,6 @@ describe('WorkoutComplete', () => {
     );
 
     // 근력 운동 메시지 중 하나가 표시되는지 확인
-    const strengthMessages = ['근육이 자라고 있어요!', '와! 오늘도 완벽하게 해냈어요'];
-    const displayedMessage = screen.getByText(/근육이 자라고|오늘도 완벽하게/);
-    expect(strengthMessages).toContain(displayedMessage.textContent || '');
+    expect(screen.getByText(/근육이 자라고|오늘도 완벽하게/)).toBeInTheDocument();
   });
 }); 

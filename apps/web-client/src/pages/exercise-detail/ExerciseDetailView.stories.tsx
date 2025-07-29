@@ -8,6 +8,13 @@ const meta: Meta<typeof ExerciseDetailView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onSetsChange: { action: 'sets changed' },
+    onWeightChange: { action: 'weight changed' },
+    onDurationChange: { action: 'duration changed' },
+    onAddExercise: { action: 'add exercise clicked' },
+    onCompleteRoutine: { action: 'complete routine clicked' },
+  },
   tags: ['autodocs'],
 };
 
@@ -49,11 +56,6 @@ export const WeightExercise: Story = {
     formState: mockFormState,
     formConfig: mockFormConfig,
     isCardio: false,
-    onSetsChange: (sets: number) => console.log('Sets changed:', sets),
-    onWeightChange: (weight: number) => console.log('Weight changed:', weight),
-    onDurationChange: (duration: number) => console.log('Duration changed:', duration),
-    onAddExercise: () => console.log('Add exercise clicked'),
-    onCompleteRoutine: () => console.log('Complete routine clicked'),
   },
 };
 
@@ -63,11 +65,6 @@ export const CardioExercise: Story = {
     formState: mockFormState,
     formConfig: mockFormConfig,
     isCardio: true,
-    onSetsChange: (sets: number) => console.log('Sets changed:', sets),
-    onWeightChange: (weight: number) => console.log('Weight changed:', weight),
-    onDurationChange: (duration: number) => console.log('Duration changed:', duration),
-    onAddExercise: () => console.log('Add exercise clicked'),
-    onCompleteRoutine: () => console.log('Complete routine clicked'),
   },
 };
 
@@ -84,10 +81,5 @@ export const WithErrors: Story = {
     },
     formConfig: mockFormConfig,
     isCardio: false,
-    onSetsChange: (sets: number) => console.log('Sets changed:', sets),
-    onWeightChange: (weight: number) => console.log('Weight changed:', weight),
-    onDurationChange: (duration: number) => console.log('Duration changed:', duration),
-    onAddExercise: () => console.log('Add exercise clicked'),
-    onCompleteRoutine: () => console.log('Complete routine clicked'),
   },
 }; 

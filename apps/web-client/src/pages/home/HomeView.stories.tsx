@@ -7,6 +7,9 @@ const meta: Meta<typeof HomeView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onStartWorkout: { action: 'start workout clicked' },
+  },
   tags: ['autodocs'],
 };
 
@@ -14,9 +17,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    onStartWorkout: () => {
-      console.log('운동 시작 버튼 클릭됨');
-    },
-  },
+  args: {},
 }; 

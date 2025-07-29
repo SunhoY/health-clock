@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { WorkoutSummaryView } from './WorkoutSummaryView';
-import { DailyWorkoutSummary } from '../../types/exercise';
+import { DailyWorkoutSummary, ExerciseSummary } from '../../types/exercise';
 
 const meta: Meta<typeof WorkoutSummaryView> = {
   title: 'Pages/WorkoutSummary/WorkoutSummaryView',
@@ -82,7 +82,7 @@ export const WeightOnly: Story = {
       ...baseSummary,
       totalCardioTime: undefined,
       estimatedCalories: 300,
-      exercises: baseSummary.exercises.filter(ex => ex.type === 'weight'),
+      exercises: baseSummary.exercises.filter((ex: ExerciseSummary) => ex.type === 'weight'),
     },
   },
 };
@@ -94,7 +94,7 @@ export const CardioOnly: Story = {
       totalWeight: undefined,
       totalCardioTime: 60,
       estimatedCalories: 400,
-      exercises: baseSummary.exercises.filter(ex => ex.type === 'cardio'),
+      exercises: baseSummary.exercises.filter((ex: ExerciseSummary) => ex.type === 'cardio'),
     },
   },
 };

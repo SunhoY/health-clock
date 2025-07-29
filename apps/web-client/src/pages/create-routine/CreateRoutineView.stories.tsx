@@ -7,6 +7,9 @@ const meta: Meta<typeof CreateRoutineView> = {
   parameters: {
     layout: 'fullscreen',
   },
+  argTypes: {
+    onBodyPartSelect: { action: 'body part selected' },
+  },
   tags: ['autodocs'],
 };
 
@@ -28,8 +31,5 @@ const mockBodyParts = [
 export const Default: Story = {
   args: {
     bodyParts: mockBodyParts,
-    onBodyPartSelect: (bodyPartId: string) => {
-      console.log('선택된 부위:', bodyPartId);
-    },
   },
 }; 

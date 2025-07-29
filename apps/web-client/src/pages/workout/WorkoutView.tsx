@@ -1,4 +1,4 @@
-import { WorkoutProgress, TimerState, ExerciseDetail } from '../../types/exercise';
+import { WorkoutProgress, TimerState } from '../../types/exercise';
 
 interface WorkoutViewProps {
   progress: WorkoutProgress;

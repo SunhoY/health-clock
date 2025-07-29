@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { WorkoutCompleteView } from './WorkoutCompleteView';
 import { 
@@ -121,6 +121,26 @@ export const WorkoutComplete = ({ completionData, userStats }: WorkoutCompletePr
   // URL state에서 completionData를 가져오거나 props에서 가져옴
   const workoutData = completionData || location.state?.completionData;
   
+  // 운동 완료 데이터 저장
+  const saveWorkoutData = useCallback(() => {
+    if (workoutData) {
+      console.log('운동 완료 데이터 저장:', workoutData);
+      // TODO: 실제 데이터 저장 로직 구현
+    }
+  }, [workoutData]);
+  
+  // 사용자 통계 업데이트
+  const updateUserStats = useCallback(() => {
+    if (workoutData) {
+      console.log('사용자 통계 업데이트:', {
+        totalWorkouts: (userStats?.totalWorkouts || 0) + 1,
+        totalDuration: (userStats?.totalDuration || 0) + workoutData.duration,
+        currentStreak: userStats?.currentStreak || 1,
+      });
+      // TODO: 실제 통계 업데이트 로직 구현
+    }
+  }, [workoutData, userStats]);
+  
   // completionData가 없으면 홈으로 리다이렉트
   useEffect(() => {
     if (!workoutData) {
@@ -128,34 +148,18 @@ export const WorkoutComplete = ({ completionData, userStats }: WorkoutCompletePr
     }
   }, [workoutData, navigate]);
   
-  // completionData가 없으면 로딩 상태 표시
-  if (!workoutData) {
-    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">로딩 중...</div>;
-  }
-  
-  // 운동 완료 데이터 저장
-  const saveWorkoutData = () => {
-    console.log('운동 완료 데이터 저장:', workoutData);
-    // TODO: 실제 데이터 저장 로직 구현
-  };
-  
-  // 사용자 통계 업데이트
-  const updateUserStats = () => {
-    console.log('사용자 통계 업데이트:', {
-      totalWorkouts: (userStats?.totalWorkouts || 0) + 1,
-      totalDuration: (userStats?.totalDuration || 0) + workoutData.duration,
-      currentStreak: userStats?.currentStreak || 1,
-    });
-    // TODO: 실제 통계 업데이트 로직 구현
-  };
-  
   // 컴포넌트 마운트 시 데이터 저장 및 통계 업데이트
   useEffect(() => {
     if (workoutData) {
       saveWorkoutData();
       updateUserStats();
     }
-  }, [workoutData]);
+  }, [workoutData, saveWorkoutData, updateUserStats]);
+  
+  // completionData가 없으면 로딩 상태 표시
+  if (!workoutData) {
+    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">로딩 중...</div>;
+  }
   
   const celebrationMessage = selectCelebrationMessage(workoutData, userStats);
   const achievements = checkAchievements(workoutData, userStats);
@@ -174,7 +178,7 @@ export const WorkoutComplete = ({ completionData, userStats }: WorkoutCompletePr
   
   return (
     <WorkoutCompleteView
-      completionData={completionData}
+      completionData={workoutData}
       celebrationMessage={celebrationMessage}
       achievements={achievements}
       onViewSummary={handleViewSummary}

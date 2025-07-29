@@ -22,6 +22,7 @@ alwaysApply: true
   - 예: import { useState } from 'react' // OK
 - 각 컴포넌트는 자체 스타일을 가진다. 예를 들어 버튼이 있다면 자체적인 스타일을 가진다. 부모 컴포넌트에서 추가적인 스타일이 필요한 경우에만 부모 컴포넌트에서 추가 스타일을 지정한다.
 - 각 컴포넌트의 기본 속성은 Props 로 명명한다.
+- any 사용은 지양한다.
 
 # Folder - React
 - src/pages/{page} 위치에 최상단 Presentational, Controller 컴포넌트를 둔다.

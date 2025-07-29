@@ -102,12 +102,12 @@ export const WorkoutCompleteView = ({
         {achievements.length > 0 && (
           <div className="bg-gray-800 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-center text-yellow-400 mb-4">
-              🏆 새로운 성취!
+              <span role="img" aria-label="트로피">🏆</span> 새로운 성취!
             </h2>
             <div className="space-y-3">
               {achievements.map((achievement) => (
                 <div key={achievement.id} className="flex items-center space-x-3 bg-gray-700 rounded p-3">
-                  <span className="text-2xl">{achievement.icon}</span>
+                  <span className="text-2xl" role="img" aria-label={achievement.title}>{achievement.icon}</span>
                   <div>
                     <div className="font-semibold text-white">{achievement.title}</div>
                     <div className="text-sm text-gray-300">{achievement.description}</div>
