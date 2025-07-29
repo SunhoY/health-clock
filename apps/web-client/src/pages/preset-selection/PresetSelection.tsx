@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { PresetSelectionView } from './PresetSelectionView';
 
 // 임시 프리셋 데이터 (나중에 실제 데이터로 교체)
@@ -27,6 +28,8 @@ const mockPresets = [
 ];
 
 export const PresetSelection = () => {
+  const navigate = useNavigate();
+
   const handlePresetSelect = (presetId: string) => {
     // TODO: 운동 진행 화면으로 라우팅
     console.log('선택된 프리셋:', presetId);
@@ -34,9 +37,7 @@ export const PresetSelection = () => {
   };
 
   const handleAddWorkout = () => {
-    // TODO: 루틴 생성 플로우로 라우팅
-    console.log('새로운 루틴 만들기');
-    // navigate('/create-routine');
+    navigate('/create-routine');
   };
 
   return (
