@@ -76,6 +76,44 @@ export interface ValidationRules {
   };
 }
 
+export interface WorkoutSession {
+  id: string;
+  presetId?: string;
+  exercises: ExerciseDetail[];
+  currentExerciseIndex: number;
+  currentSet: number;
+  startTime: Date;
+  pausedTime?: number;
+  completedSets: CompletedSet[];
+  status: 'active' | 'paused' | 'completed' | 'abandoned';
+}
+
+export interface CompletedSet {
+  exerciseId: string;
+  setNumber: number;
+  weight?: number;
+  reps?: number;
+  duration?: number;
+  restTime: number;
+  completedAt: Date;
+}
+
+export interface TimerState {
+  isRunning: boolean;
+  timeRemaining: number;
+  totalTime: number;
+  isPaused: boolean;
+}
+
+export interface WorkoutProgress {
+  currentExercise: ExerciseDetail;
+  totalExercises: number;
+  currentExerciseIndex: number;
+  currentSet: number;
+  totalSets: number;
+  percentComplete: number;
+}
+
 export const FORM_CONFIG: FormConfig = {
   sets: { min: 1, max: 10, step: 1, default: 3 },
   weight: { min: 0, max: 500, step: 5, default: 20 },
