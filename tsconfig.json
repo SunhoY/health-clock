@@ -5,6 +5,12 @@
   "references": [
     {
       "path": "./apps/web-client"
+    },
+    {
+      "path": "./apps/nest-backend-e2e"
+    },
+    {
+      "path": "./apps/nest-backend"
     }
   ],
   "ts-node": {
