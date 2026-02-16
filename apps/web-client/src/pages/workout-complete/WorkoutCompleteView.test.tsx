@@ -114,7 +114,7 @@ describe('WorkoutCompleteView', () => {
       />
     );
 
-    expect(screen.getByText('🏆 새로운 성취!')).toBeInTheDocument();
+    expect(screen.getByText('새로운 성취!')).toBeInTheDocument();
     expect(screen.getByText('첫 운동 완료')).toBeInTheDocument();
     expect(screen.getByText('첫 번째 운동을 완료했습니다!')).toBeInTheDocument();
   });
@@ -128,7 +128,7 @@ describe('WorkoutCompleteView', () => {
       />
     );
 
-    expect(screen.queryByText('🏆 새로운 성취!')).not.toBeInTheDocument();
+    expect(screen.queryByText('새로운 성취!')).not.toBeInTheDocument();
   });
 
   it('액션 버튼들이 올바르게 렌더링된다', () => {

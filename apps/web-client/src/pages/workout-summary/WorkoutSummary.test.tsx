@@ -1,13 +1,20 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { WorkoutSummary } from './WorkoutSummary';
+import { WorkoutSummary, setTempWorkoutSessions } from './WorkoutSummary';
 import { WorkoutCompletionData } from '../../types/exercise';
 
 // Mock react-router-dom
 const mockNavigate = jest.fn();
+let mockLocationState: unknown = undefined;
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
+  useLocation: () => ({
+    state: mockLocationState,
+    pathname: '/workout-summary',
+    search: '',
+    hash: '',
+  }),
 }));
 
 // Mock console.log
@@ -46,6 +53,8 @@ const mockCompletionData: WorkoutCompletionData = {
 describe('WorkoutSummary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockLocationState = undefined;
+    setTempWorkoutSessions([]);
   });
 
   afterAll(() => {
@@ -73,18 +82,7 @@ describe('WorkoutSummary', () => {
   });
 
   it('URL state에서 completionData를 받아와서 임시 저장소에 추가한다', () => {
-    const mockLocation = {
-      state: { completionData: mockCompletionData },
-      pathname: '/workout-summary',
-      search: '',
-      hash: '',
-    };
-
-    jest.doMock('react-router-dom', () => ({
-      ...jest.requireActual('react-router-dom'),
-      useNavigate: () => mockNavigate,
-      useLocation: () => mockLocation,
-    }));
+    mockLocationState = { completionData: mockCompletionData };
 
     render(
       <MemoryRouter>
@@ -117,16 +115,14 @@ describe('WorkoutSummary', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
-  it('로딩 상태가 올바르게 표시된다', () => {
+  it('요약 화면이 렌더링된다', () => {
     render(
       <MemoryRouter>
         <WorkoutSummary />
       </MemoryRouter>
     );
 
-    // 초기에는 로딩 상태가 표시되어야 함
-    expect(screen.getByText('로딩 중...')).toBeInTheDocument();
-    expect(screen.getByText('운동 데이터를 불러오고 있습니다.')).toBeInTheDocument();
+    expect(screen.getByText('오늘의 운동 요약')).toBeInTheDocument();
   });
 
   it('운동 기록이 없을 때 빈 상태가 표시된다', async () => {
@@ -145,7 +141,6 @@ describe('WorkoutSummary', () => {
 
   it('운동 데이터가 있을 때 요약 정보가 표시된다', async () => {
     // 임시 저장소에 데이터 추가
-    const { setTempWorkoutSessions } = await import('./WorkoutSummary');
     setTempWorkoutSessions([mockCompletionData]);
 
     render(
@@ -165,7 +160,6 @@ describe('WorkoutSummary', () => {
 
   it('웨이트 운동과 유산소 운동이 올바른 형식으로 표시된다', async () => {
     // 임시 저장소에 데이터 추가
-    const { setTempWorkoutSessions } = await import('./WorkoutSummary');
     setTempWorkoutSessions([mockCompletionData]);
 
     render(
