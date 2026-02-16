@@ -45,7 +45,7 @@ describe('PresetSelection', () => {
     consoleSpy.mockRestore();
   });
 
-  it('새로운 루틴 만들기 버튼 클릭 시 루틴 생성 화면으로 라우팅된다', async () => {
+  it('루틴 만들기 버튼 클릭 시 루틴 생성 화면으로 라우팅된다', async () => {
     const user = userEvent.setup();
 
     render(
@@ -54,7 +54,7 @@ describe('PresetSelection', () => {
       </MemoryRouter>
     );
 
-    const addButton = screen.getByRole('button', { name: '새로운 루틴 만들기' });
+    const addButton = screen.getByRole('button', { name: '루틴 만들기' });
     await user.click(addButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/create-routine');

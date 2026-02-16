@@ -35,10 +35,8 @@ describe('PresetSelectionView', () => {
 
     expect(screen.getByText('운동 루틴 선택')).toBeInTheDocument();
     expect(screen.getByText('전신 운동')).toBeInTheDocument();
-    expect(screen.getByText('2개의 운동')).toBeInTheDocument();
-    expect(screen.getByText('스쿼트')).toBeInTheDocument();
-    expect(screen.getByText('푸시업')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '새로운 루틴 만들기' })).toBeInTheDocument();
+    expect(screen.getByText('2개 운동')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '루틴 만들기' })).toBeInTheDocument();
   });
 
   it('프리셋이 없을 때 빈 상태 화면이 표시된다', () => {
@@ -51,9 +49,8 @@ describe('PresetSelectionView', () => {
     );
 
     expect(screen.getByText('운동 루틴 선택')).toBeInTheDocument();
-    expect(screen.getByText('저장된 운동 루틴이 없습니다')).toBeInTheDocument();
-    expect(screen.getByText('새로운 운동 루틴을 만들어보세요')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '운동 루틴 만들기' })).toBeInTheDocument();
+    expect(screen.getByText('저장된 루틴이 없습니다.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '루틴 만들기' })).toBeInTheDocument();
   });
 
   it('프리셋 카드 클릭 시 onPresetSelect 함수가 호출된다', async () => {
@@ -72,7 +69,7 @@ describe('PresetSelectionView', () => {
     expect(mockOnPresetSelect).toHaveBeenCalledWith('1');
   });
 
-  it('새로운 루틴 만들기 버튼 클릭 시 onAddWorkout 함수가 호출된다', async () => {
+  it('루틴 만들기 버튼 클릭 시 onAddWorkout 함수가 호출된다', async () => {
     const user = userEvent.setup();
     render(
       <PresetSelectionView
@@ -82,13 +79,13 @@ describe('PresetSelectionView', () => {
       />
     );
 
-    const addButton = screen.getByRole('button', { name: '새로운 루틴 만들기' });
+    const addButton = screen.getByRole('button', { name: '루틴 만들기' });
     await user.click(addButton);
 
     expect(mockOnAddWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it('빈 상태에서 운동 루틴 만들기 버튼 클릭 시 onAddWorkout 함수가 호출된다', async () => {
+  it('빈 상태에서 루틴 만들기 버튼 클릭 시 onAddWorkout 함수가 호출된다', async () => {
     const user = userEvent.setup();
     render(
       <PresetSelectionView
@@ -98,7 +95,7 @@ describe('PresetSelectionView', () => {
       />
     );
 
-    const addButton = screen.getByRole('button', { name: '운동 루틴 만들기' });
+    const addButton = screen.getByRole('button', { name: '루틴 만들기' });
     await user.click(addButton);
 
     expect(mockOnAddWorkout).toHaveBeenCalledTimes(1);
