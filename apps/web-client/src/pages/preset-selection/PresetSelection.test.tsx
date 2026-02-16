@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { PresetSelection } from './PresetSelection';
+import { addLocalPreset, resetLocalPresets } from './presetStore';
 
 const mockNavigate = jest.fn();
 
@@ -14,6 +15,7 @@ jest.mock('react-router-dom', () => ({
 describe('PresetSelection', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    resetLocalPresets();
   });
   it('PresetSelection 컴포넌트가 올바르게 렌더링된다', () => {
     render(
@@ -75,5 +77,25 @@ describe('PresetSelection', () => {
     await user.click(addButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/create-routine');
+  });
+
+  it('로컬 저장된 새 루틴이 프리셋 목록에 표시된다', () => {
+    addLocalPreset('새로 만든 루틴', [
+      {
+        exerciseId: 'bench-press',
+        exerciseName: '벤치프레스',
+        bodyPart: 'chest',
+        sets: 3,
+        weight: 20
+      }
+    ]);
+
+    render(
+      <MemoryRouter>
+        <PresetSelection />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('새로 만든 루틴')).toBeInTheDocument();
   });
 }); 

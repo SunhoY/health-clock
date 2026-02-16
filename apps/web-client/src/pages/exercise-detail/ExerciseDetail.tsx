@@ -4,6 +4,7 @@ import { ExerciseDetailView } from './ExerciseDetailView';
 import { EXERCISES_DATA, FORM_CONFIG, Exercise, ExerciseDetail as ExerciseDetailModel, RoutineTitleForm } from '../../types/exercise';
 import { RoutineTitleView } from '../routine-title/RoutineTitleView';
 import { appendTempRoutineData, getTempRoutineData } from '../routine-title/RoutineTitle';
+import { addLocalPreset } from '../preset-selection/presetStore';
 
 interface StrengthSetInput {
   setNumber: number;
@@ -295,13 +296,13 @@ export function ExerciseDetail() {
     }
 
     appendTempRoutineData(pendingCompleteExercise);
-    const savePayload = {
-      title: titleForm.title.trim(),
-      exercises: getTempRoutineData(),
-      createdAt: new Date()
-    };
+    const title = titleForm.title.trim();
+    const exercises = getTempRoutineData();
+    const savedPreset = addLocalPreset(title, exercises);
 
-    console.log('루틴 저장:', savePayload);
+    console.log('루틴 저장:', savedPreset);
+    setIsTitleDialogOpen(false);
+    setPendingCompleteExercise(null);
     navigate('/preset-selection');
   };
 

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseDetail } from './ExerciseDetail';
 import { getTempRoutineData, setTempRoutineData } from '../routine-title/RoutineTitle';
+import { getLocalPresets, resetLocalPresets } from '../preset-selection/presetStore';
 
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
   // noop
@@ -45,6 +46,7 @@ describe('ExerciseDetail', () => {
     mockConsoleLog.mockClear();
     mockNavigate.mockClear();
     setTempRoutineData([]);
+    resetLocalPresets();
   });
 
   afterAll(() => {
@@ -104,6 +106,7 @@ describe('ExerciseDetail', () => {
     await user.click(screen.getByText('저장'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
+    expect(getLocalPresets()[0].title).toBe('오늘 루틴');
 
     const draft = getTempRoutineData();
     expect(draft).toHaveLength(1);

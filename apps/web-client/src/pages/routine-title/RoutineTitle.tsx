@@ -82,3 +82,7 @@ export const getTempRoutineData = (): ExerciseDetail[] => {
 export const appendTempRoutineData = (exercise: ExerciseDetail) => {
   tempRoutineData = [...tempRoutineData, exercise];
 };
+
+export const clearTempRoutineData = () => {
+  tempRoutineData = [];
+};
