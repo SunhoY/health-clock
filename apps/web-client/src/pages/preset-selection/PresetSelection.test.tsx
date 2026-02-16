@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { PresetSelection } from './PresetSelection';
 import { addLocalPreset, resetLocalPresets } from './presetStore';
+import * as presetApi from './presetApi';
 
 const mockNavigate = jest.fn();
 
@@ -16,6 +17,7 @@ describe('PresetSelection', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
     resetLocalPresets();
+    jest.restoreAllMocks();
   });
   it('PresetSelection 컴포넌트가 올바르게 렌더링된다', () => {
     render(
@@ -98,7 +100,8 @@ describe('PresetSelection', () => {
 
   it('액션 메뉴에서 삭제 선택 후 확인하면 목록에서 제거된다', async () => {
     const user = userEvent.setup();
-    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    const deletePresetSpy = jest.spyOn(presetApi, 'deletePreset');
+    const fetchPresetsSpy = jest.spyOn(presetApi, 'fetchPresets');
 
     render(
       <MemoryRouter>
@@ -109,9 +112,28 @@ describe('PresetSelection', () => {
     await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
     await user.click(screen.getByRole('button', { name: '삭제' }));
 
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(deletePresetSpy).toHaveBeenCalledWith('1');
+    expect(fetchPresetsSpy).toHaveBeenCalled();
     expect(screen.queryByText('전신 운동')).not.toBeInTheDocument();
-    confirmSpy.mockRestore();
+  });
+
+  it('삭제 API가 실패하면 목록은 유지된다', async () => {
+    const user = userEvent.setup();
+    jest.spyOn(presetApi, 'deletePreset').mockRejectedValue(new Error('delete failed'));
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    render(
+      <MemoryRouter>
+        <PresetSelection />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(screen.getByText('전신 운동')).toBeInTheDocument();
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   it('로컬 저장된 새 루틴이 프리셋 목록에 표시된다', () => {

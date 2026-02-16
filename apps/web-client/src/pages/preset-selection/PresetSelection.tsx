@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PresetSelectionView } from './PresetSelectionView';
 import { ExerciseDetail } from '../../types/exercise';
-import { deleteLocalPreset, getLocalPresets } from './presetStore';
+import { fetchPresets, deletePreset } from './presetApi';
+import { getLocalPresets } from './presetStore';
 
 export const PresetSelection = () => {
   const navigate = useNavigate();
@@ -43,19 +44,19 @@ export const PresetSelection = () => {
     navigate('/create-routine', { state: { mode: 'edit', presetId } });
   };
 
-  const handleDeletePreset = (presetId: string) => {
-    const target = presets.find((preset) => preset.id === presetId);
-    if (!target) {
+  const handleDeletePreset = async (presetId: string) => {
+    const exists = presets.some((preset) => preset.id === presetId);
+    if (!exists) {
       return;
     }
 
-    const shouldDelete = window.confirm(`"${target.title}" 루틴을 삭제할까요?`);
-    if (!shouldDelete) {
-      return;
+    try {
+      await deletePreset(presetId);
+      const nextPresets = await fetchPresets();
+      setPresets(nextPresets);
+    } catch (error) {
+      console.error('프리셋 삭제에 실패했습니다.', error);
     }
-
-    deleteLocalPreset(presetId);
-    setPresets(getLocalPresets());
   };
 
   return (
