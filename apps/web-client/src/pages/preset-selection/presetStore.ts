@@ -69,6 +69,10 @@ export const addLocalPreset = (title: string, exercises: ExerciseDetail[]) => {
   return next;
 };
 
+export const deleteLocalPreset = (presetId: string) => {
+  localPresets = localPresets.filter((preset) => preset.id !== presetId);
+};
+
 export const resetLocalPresets = () => {
   localPresets = [...INITIAL_PRESETS];
 };

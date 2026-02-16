@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PresetSelectionView } from './PresetSelectionView';
 import { ExerciseDetail } from '../../types/exercise';
-import { getLocalPresets } from './presetStore';
+import { deleteLocalPreset, getLocalPresets } from './presetStore';
 
 export const PresetSelection = () => {
   const navigate = useNavigate();
-  const presets = getLocalPresets();
+  const [presets, setPresets] = useState(getLocalPresets());
 
   const toExerciseDetails = (
     exercises: typeof presets[number]['exercises']
@@ -38,11 +39,32 @@ export const PresetSelection = () => {
     navigate('/create-routine');
   };
 
+  const handleEditPreset = (presetId: string) => {
+    navigate('/create-routine', { state: { mode: 'edit', presetId } });
+  };
+
+  const handleDeletePreset = (presetId: string) => {
+    const target = presets.find((preset) => preset.id === presetId);
+    if (!target) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(`"${target.title}" 루틴을 삭제할까요?`);
+    if (!shouldDelete) {
+      return;
+    }
+
+    deleteLocalPreset(presetId);
+    setPresets(getLocalPresets());
+  };
+
   return (
     <PresetSelectionView
       presets={presets}
       onPresetSelect={handlePresetSelect}
       onAddWorkout={handleAddWorkout}
+      onEditPreset={handleEditPreset}
+      onDeletePreset={handleDeletePreset}
     />
   );
 }; 

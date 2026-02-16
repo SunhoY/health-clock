@@ -79,6 +79,41 @@ describe('PresetSelection', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/create-routine');
   });
 
+  it('액션 메뉴에서 편집 선택 시 편집 플로우로 이동한다', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <PresetSelection />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '편집' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/create-routine', {
+      state: { mode: 'edit', presetId: '1' }
+    });
+  });
+
+  it('액션 메뉴에서 삭제 선택 후 확인하면 목록에서 제거된다', async () => {
+    const user = userEvent.setup();
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(
+      <MemoryRouter>
+        <PresetSelection />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(screen.queryByText('전신 운동')).not.toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
   it('로컬 저장된 새 루틴이 프리셋 목록에 표시된다', () => {
     addLocalPreset('새로 만든 루틴', [
       {
