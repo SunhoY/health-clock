@@ -21,6 +21,31 @@ export interface ExerciseDetail {
   reps?: number;
   duration?: number; // 유산소 운동일 경우 필수
   restTime?: number; // 세트 간 휴식 시간 (기본값 설정)
+  setDetails?: StrengthExerciseSetViewModel[];
+}
+
+export interface StrengthExerciseSetViewModel {
+  setNumber: number;
+  weight?: number;
+  reps?: number;
+}
+
+export interface StrengthExerciseInputViewModel {
+  exerciseId: string;
+  exerciseName: string;
+  sets: StrengthExerciseSetViewModel[];
+}
+
+export interface CardioExerciseInputViewModel {
+  exerciseId: string;
+  exerciseName: string;
+  durationMinutes?: number;
+}
+
+export interface RoutineExerciseDraftViewModel {
+  type: 'strength' | 'cardio';
+  strength?: StrengthExerciseInputViewModel;
+  cardio?: CardioExerciseInputViewModel;
 }
 
 export interface FormState {

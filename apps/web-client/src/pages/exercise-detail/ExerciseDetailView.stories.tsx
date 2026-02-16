@@ -1,85 +1,76 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { ExerciseDetailView } from './ExerciseDetailView';
-import { Exercise, FormState, FormConfig } from '../../types/exercise';
+import { Exercise } from '../../types/exercise';
 
 const meta: Meta<typeof ExerciseDetailView> = {
   title: 'Pages/ExerciseDetail/ExerciseDetailView',
   component: ExerciseDetailView,
   parameters: {
-    layout: 'fullscreen',
+    layout: 'fullscreen'
   },
   argTypes: {
-    onSetsChange: { action: 'sets changed' },
-    onWeightChange: { action: 'weight changed' },
-    onDurationChange: { action: 'duration changed' },
+    onSetCountChange: { action: 'set count changed' },
+    onStrengthSetChange: { action: 'strength set changed' },
+    onDurationInputChange: { action: 'duration changed' },
     onAddExercise: { action: 'add exercise clicked' },
-    onCompleteRoutine: { action: 'complete routine clicked' },
+    onCompleteRoutine: { action: 'complete routine clicked' }
   },
-  tags: ['autodocs'],
+  tags: ['autodocs']
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const mockFormConfig: FormConfig = {
-  sets: { min: 1, max: 10, step: 1, default: 3 },
-  weight: { min: 0, max: 500, step: 5, default: 20 },
-  duration: { min: 1, max: 180, step: 1, default: 30 }
-};
-
-const mockFormState: FormState = {
-  sets: 3,
-  weight: 20,
-  duration: 30,
-  isValid: true,
-  errors: {}
-};
-
-const mockWeightExercise: Exercise = {
+const weightExercise: Exercise = {
   id: 'bench-press',
   name: '벤치프레스',
-  bodyPart: 'chest',
-  equipment: ['바벨', '벤치'],
-  difficulty: 'intermediate'
+  bodyPart: 'chest'
 };
 
-const mockCardioExercise: Exercise = {
+const cardioExercise: Exercise = {
   id: 'treadmill',
   name: '러닝머신',
-  bodyPart: 'cardio',
-  equipment: ['러닝머신']
+  bodyPart: 'cardio'
 };
 
-export const WeightExercise: Story = {
+const baseArgs = {
+  setCount: 3,
+  setRange: { min: 1, max: 10, step: 1, default: 3 },
+  strengthSets: [
+    { setNumber: 1, weightInput: '20', repsInput: '10' },
+    { setNumber: 2, weightInput: '25', repsInput: '8' },
+    { setNumber: 3, weightInput: '25', repsInput: '8' }
+  ],
+  strengthErrors: {},
+  durationInput: '30',
+  durationError: undefined,
+  isFormValid: true
+};
+
+export const Strength: Story = {
   args: {
-    exercise: mockWeightExercise,
-    formState: mockFormState,
-    formConfig: mockFormConfig,
+    ...baseArgs,
+    exercise: weightExercise,
+    isCardio: false
+  }
+};
+
+export const Cardio: Story = {
+  args: {
+    ...baseArgs,
+    exercise: cardioExercise,
+    isCardio: true
+  }
+};
+
+export const InvalidStrength: Story = {
+  args: {
+    ...baseArgs,
+    exercise: weightExercise,
     isCardio: false,
-  },
+    isFormValid: false,
+    strengthErrors: {
+      1: { weight: '중량을 입력해주세요.', reps: '횟수를 입력해주세요.' }
+    }
+  }
 };
-
-export const CardioExercise: Story = {
-  args: {
-    exercise: mockCardioExercise,
-    formState: mockFormState,
-    formConfig: mockFormConfig,
-    isCardio: true,
-  },
-};
-
-export const WithErrors: Story = {
-  args: {
-    exercise: mockWeightExercise,
-    formState: {
-      ...mockFormState,
-      isValid: false,
-      errors: {
-        sets: '세트 수는 1개 이상이어야 합니다.',
-        weight: '중량은 0kg 이상이어야 합니다.'
-      }
-    },
-    formConfig: mockFormConfig,
-    isCardio: false,
-  },
-}; 

@@ -1,117 +1,203 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExerciseDetailView } from './ExerciseDetailView';
-import { EXERCISES_DATA, FORM_CONFIG, FormState, Exercise } from '../../types/exercise';
+import { EXERCISES_DATA, FORM_CONFIG, Exercise, ExerciseDetail as ExerciseDetailModel } from '../../types/exercise';
+import { appendTempRoutineData } from '../routine-title/RoutineTitle';
+
+interface StrengthSetInput {
+  setNumber: number;
+  weightInput: string;
+  repsInput: string;
+}
+
+const createStrengthSets = (count: number, previous: StrengthSetInput[] = []): StrengthSetInput[] => {
+  return Array.from({ length: count }, (_, index) => {
+    const setNumber = index + 1;
+    const existing = previous[index];
+
+    return {
+      setNumber,
+      weightInput: existing?.weightInput ?? '',
+      repsInput: existing?.repsInput ?? ''
+    };
+  });
+};
+
+const parsePositiveInt = (value: string): number | undefined => {
+  if (!value.trim()) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+};
 
 export function ExerciseDetail() {
   const { bodyPart, exerciseId } = useParams<{ bodyPart: string; exerciseId: string }>();
   const navigate = useNavigate();
-  
+
   const [exercise, setExercise] = useState<Exercise | null>(null);
-  const [formState, setFormState] = useState<FormState>({
-    sets: FORM_CONFIG.sets.default,
-    weight: FORM_CONFIG.weight.default,
-    duration: FORM_CONFIG.duration.default,
-    isValid: true,
-    errors: {}
-  });
+  const [setCount, setSetCount] = useState(FORM_CONFIG.sets.default);
+  const [strengthSets, setStrengthSets] = useState<StrengthSetInput[]>(createStrengthSets(FORM_CONFIG.sets.default));
+  const [durationInput, setDurationInput] = useState(String(FORM_CONFIG.duration.default));
 
   useEffect(() => {
-    if (bodyPart && exerciseId) {
-      const exercises = EXERCISES_DATA[bodyPart] || [];
-      const foundExercise = exercises.find(ex => ex.id === exerciseId);
-      setExercise(foundExercise || null);
+    if (!bodyPart || !exerciseId) {
+      setExercise(null);
+      return;
     }
+
+    const exercises = EXERCISES_DATA[bodyPart] || [];
+    const foundExercise = exercises.find((ex) => ex.id === exerciseId);
+    setExercise(foundExercise || null);
   }, [bodyPart, exerciseId]);
 
   const isCardio = exercise?.bodyPart === 'cardio';
 
-  const validateForm = (newFormState: FormState): FormState => {
-    const errors: { sets?: string; weight?: string; duration?: string } = {};
-
-    // 세트 수 검증
-    if (newFormState.sets < FORM_CONFIG.sets.min || newFormState.sets > FORM_CONFIG.sets.max) {
-      errors.sets = `세트 수는 ${FORM_CONFIG.sets.min}개에서 ${FORM_CONFIG.sets.max}개 사이여야 합니다.`;
-    }
-
-    // 웨이트 운동인 경우 중량 검증
+  const durationError = useMemo(() => {
     if (!isCardio) {
-      if (newFormState.weight < FORM_CONFIG.weight.min || newFormState.weight > FORM_CONFIG.weight.max) {
-        errors.weight = `중량은 ${FORM_CONFIG.weight.min}kg에서 ${FORM_CONFIG.weight.max}kg 사이여야 합니다.`;
-      }
+      return undefined;
     }
 
-    // 유산소 운동인 경우 시간 검증
+    const duration = parsePositiveInt(durationInput);
+    if (duration === undefined) {
+      return '시간은 1분 이상의 숫자로 입력해주세요.';
+    }
+
+    if (duration > FORM_CONFIG.duration.max) {
+      return `시간은 ${FORM_CONFIG.duration.max}분 이하여야 합니다.`;
+    }
+
+    return undefined;
+  }, [durationInput, isCardio]);
+
+  const strengthErrors = useMemo(() => {
     if (isCardio) {
-      if (newFormState.duration < FORM_CONFIG.duration.min || newFormState.duration > FORM_CONFIG.duration.max) {
-        errors.duration = `시간은 ${FORM_CONFIG.duration.min}분에서 ${FORM_CONFIG.duration.max}분 사이여야 합니다.`;
-      }
+      return {} as Record<number, { weight?: string; reps?: string }>;
     }
 
-    const isValid = Object.keys(errors).length === 0;
+    return strengthSets.reduce<Record<number, { weight?: string; reps?: string }>>((acc, set) => {
+      const weight = parsePositiveInt(set.weightInput);
+      const reps = parsePositiveInt(set.repsInput);
+
+      if (weight === undefined || weight > FORM_CONFIG.weight.max) {
+        acc[set.setNumber] = {
+          ...acc[set.setNumber],
+          weight:
+            weight === undefined
+              ? '중량을 입력해주세요.'
+              : `중량은 ${FORM_CONFIG.weight.max}kg 이하여야 합니다.`
+        };
+      }
+
+      if (reps === undefined || reps > 1000) {
+        acc[set.setNumber] = {
+          ...acc[set.setNumber],
+          reps: reps === undefined ? '횟수를 입력해주세요.' : '횟수는 1000회 이하여야 합니다.'
+        };
+      }
+
+      return acc;
+    }, {});
+  }, [isCardio, strengthSets]);
+
+  const isFormValid = useMemo(() => {
+    if (isCardio) {
+      return !durationError;
+    }
+
+    return Object.keys(strengthErrors).length === 0;
+  }, [durationError, isCardio, strengthErrors]);
+
+  const handleSetCountChange = (nextCount: number) => {
+    const safeCount = Math.max(FORM_CONFIG.sets.min, Math.min(nextCount, FORM_CONFIG.sets.max));
+    setSetCount(safeCount);
+    setStrengthSets((prev) => createStrengthSets(safeCount, prev));
+  };
+
+  const handleStrengthSetChange = (
+    setNumber: number,
+    field: 'weightInput' | 'repsInput',
+    value: string
+  ) => {
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+
+    setStrengthSets((prev) =>
+      prev.map((set) => (set.setNumber === setNumber ? { ...set, [field]: value } : set))
+    );
+  };
+
+  const buildExerciseDetail = (): ExerciseDetailModel | null => {
+    if (!exercise) {
+      return null;
+    }
+
+    if (isCardio) {
+      const duration = parsePositiveInt(durationInput);
+      if (!duration || durationError) {
+        return null;
+      }
+
+      return {
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        bodyPart: exercise.bodyPart,
+        sets: 1,
+        duration,
+        restTime: 60
+      };
+    }
+
+    const setDetails = strengthSets.map((set) => ({
+      setNumber: set.setNumber,
+      weight: parsePositiveInt(set.weightInput),
+      reps: parsePositiveInt(set.repsInput)
+    }));
+
+    if (setDetails.some((set) => set.weight === undefined || set.reps === undefined)) {
+      return null;
+    }
 
     return {
-      ...newFormState,
-      errors,
-      isValid
-    };
-  };
-
-  const handleSetsChange = (sets: number) => {
-    const newFormState = { ...formState, sets };
-    setFormState(validateForm(newFormState));
-  };
-
-  const handleWeightChange = (weight: number) => {
-    const newFormState = { ...formState, weight };
-    setFormState(validateForm(newFormState));
-  };
-
-  const handleDurationChange = (duration: number) => {
-    const newFormState = { ...formState, duration };
-    setFormState(validateForm(newFormState));
-  };
-
-  const handleAddExercise = () => {
-    if (!exercise || !formState.isValid) return;
-
-    const exerciseDetail = {
       exerciseId: exercise.id,
       exerciseName: exercise.name,
       bodyPart: exercise.bodyPart,
-      sets: formState.sets,
-      weight: isCardio ? undefined : formState.weight,
-      duration: isCardio ? formState.duration : undefined,
-      restTime: 60 // 기본 휴식 시간 60초
-    };
-
-    console.log('운동 추가:', exerciseDetail);
-    // TODO: 루틴에 운동 추가 로직 구현
-  };
-
-  const handleCompleteRoutine = () => {
-    if (!exercise || !formState.isValid) return;
-
-    const exerciseDetail = {
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      bodyPart: exercise.bodyPart,
-      sets: formState.sets,
-      weight: isCardio ? undefined : formState.weight,
-      duration: isCardio ? formState.duration : undefined,
+      sets: setDetails.length,
+      setDetails,
+      weight: setDetails[0]?.weight,
+      reps: setDetails[0]?.reps,
       restTime: 60
     };
+  };
 
-    console.log('루틴 완료:', exerciseDetail);
-    // TODO: 루틴 데이터를 전역 상태나 라우터 상태로 전달
+  const saveCurrentExercise = (mode: 'add' | 'complete') => {
+    const detail = buildExerciseDetail();
+    if (!detail) {
+      return;
+    }
+
+    appendTempRoutineData(detail);
+    console.log(mode === 'add' ? '운동 추가:' : '루틴 완료:', detail);
+
+    if (mode === 'add') {
+      navigate(`/exercise-selection/${bodyPart ?? detail.bodyPart}`);
+      return;
+    }
+
     navigate('/routine-title');
   };
 
   if (!exercise) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-2xl font-bold mb-4">운동을 찾을 수 없습니다</h1>
+      <div className="min-h-screen bg-gray-900 p-6 text-white">
+        <div className="mx-auto max-w-2xl text-center">
+          <h1 className="mb-4 text-2xl font-bold">운동을 찾을 수 없습니다</h1>
           <p className="text-gray-400">선택한 운동이 존재하지 않습니다.</p>
         </div>
       </div>
@@ -121,14 +207,19 @@ export function ExerciseDetail() {
   return (
     <ExerciseDetailView
       exercise={exercise}
-      formState={formState}
-      formConfig={FORM_CONFIG}
       isCardio={isCardio}
-      onSetsChange={handleSetsChange}
-      onWeightChange={handleWeightChange}
-      onDurationChange={handleDurationChange}
-      onAddExercise={handleAddExercise}
-      onCompleteRoutine={handleCompleteRoutine}
+      setCount={setCount}
+      setRange={FORM_CONFIG.sets}
+      strengthSets={strengthSets}
+      strengthErrors={strengthErrors}
+      durationInput={durationInput}
+      durationError={durationError}
+      isFormValid={isFormValid}
+      onSetCountChange={handleSetCountChange}
+      onStrengthSetChange={handleStrengthSetChange}
+      onDurationInputChange={setDurationInput}
+      onAddExercise={() => saveCurrentExercise('add')}
+      onCompleteRoutine={() => saveCurrentExercise('complete')}
     />
   );
-} 
+}

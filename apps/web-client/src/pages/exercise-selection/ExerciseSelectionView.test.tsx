@@ -36,7 +36,7 @@ describe('ExerciseSelectionView', () => {
       />
     );
 
-    expect(screen.getByText('가슴 운동 선택')).toBeInTheDocument();
+    expect(screen.getByText('가슴 운동')).toBeInTheDocument();
   });
 
   it('해당 부위의 운동 목록이 모두 렌더링된다', () => {
@@ -81,7 +81,7 @@ describe('ExerciseSelectionView', () => {
     expect(screen.getByText('선택된 부위에 해당하는 운동이 없습니다.')).toBeInTheDocument();
   });
 
-  it('운동 카드에 장비 정보가 표시된다', () => {
+  it('운동 목록에는 운동명만 표시된다', () => {
     render(
       <ExerciseSelectionView
         selectedBodyPart="chest"
@@ -90,23 +90,8 @@ describe('ExerciseSelectionView', () => {
       />
     );
 
-    expect(screen.getByText('필요 장비:')).toBeInTheDocument();
-    expect(screen.getByText('바벨')).toBeInTheDocument();
-    expect(screen.getByText('벤치')).toBeInTheDocument();
-  });
-
-  it('운동 카드에 난이도 정보가 표시된다', () => {
-    render(
-      <ExerciseSelectionView
-        selectedBodyPart="chest"
-        exercises={mockExercises}
-        onExerciseSelect={mockOnExerciseSelect}
-      />
-    );
-
-    expect(screen.getAllByText('난이도:')).toHaveLength(2);
-    expect(screen.getByText('중급')).toBeInTheDocument();
-    expect(screen.getByText('초급')).toBeInTheDocument();
+    expect(screen.queryByText('필요 장비:')).not.toBeInTheDocument();
+    expect(screen.queryByText('난이도:')).not.toBeInTheDocument();
   });
 
   it('키보드로 운동을 선택할 수 있다', async () => {

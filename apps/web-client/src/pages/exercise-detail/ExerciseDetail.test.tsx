@@ -2,141 +2,114 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseDetail } from './ExerciseDetail';
+import { getTempRoutineData, setTempRoutineData } from '../routine-title/RoutineTitle';
 
-// Mock console.log
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
-  // Mock implementation
+  // noop
 });
+
+const mockNavigate = jest.fn();
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate
+}));
+
+const renderWithRoute = (route: string) => {
+  return render(
+    <MemoryRouter initialEntries={[route]}>
+      <Routes>
+        <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
+      </Routes>
+    </MemoryRouter>
+  );
+};
+
+const fillStrengthInputs = async (user: ReturnType<typeof userEvent.setup>) => {
+  const weightInputs = screen.getAllByLabelText('중량(kg)');
+  const repsInputs = screen.getAllByLabelText('횟수(reps)');
+
+  for (let i = 0; i < 3; i += 1) {
+    await user.clear(weightInputs[i]);
+    await user.type(weightInputs[i], String(20 + i * 5));
+    await user.clear(repsInputs[i]);
+    await user.type(repsInputs[i], String(12 - i));
+  }
+};
 
 describe('ExerciseDetail', () => {
   beforeEach(() => {
     mockConsoleLog.mockClear();
+    mockNavigate.mockClear();
+    setTempRoutineData([]);
   });
 
   afterAll(() => {
     mockConsoleLog.mockRestore();
   });
 
-  it('벤치프레스 운동 상세 화면이 렌더링된다', () => {
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/chest/bench-press']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
-    expect(screen.getByText('벤치프레스 상세 설정')).toBeInTheDocument();
-    expect(screen.getByText('세트 수')).toBeInTheDocument();
-    expect(screen.getByText('중량')).toBeInTheDocument();
-  });
+  it('근력 운동 상세 입력 화면이 렌더링된다', () => {
+    renderWithRoute('/exercise-detail/chest/bench-press');
 
-  it('러닝머신 운동 상세 화면이 렌더링된다', () => {
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/cardio/treadmill']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
-    expect(screen.getByText('러닝머신 상세 설정')).toBeInTheDocument();
-    expect(screen.getByText('세트 수')).toBeInTheDocument();
-    expect(screen.getByText('시간')).toBeInTheDocument();
-    expect(screen.queryByText('중량')).not.toBeInTheDocument();
-  });
-
-  it('존재하지 않는 운동에 대해 에러 메시지를 표시한다', () => {
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/chest/non-existent']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
-    expect(screen.getByText('운동을 찾을 수 없습니다')).toBeInTheDocument();
-    expect(screen.getByText('선택한 운동이 존재하지 않습니다.')).toBeInTheDocument();
-  });
-
-  it('운동 추가 버튼 클릭 시 콘솔에 로그가 출력된다', async () => {
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/chest/bench-press']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
-    const addButton = screen.getByText('운동 추가');
-    await user.click(addButton);
-    
-    expect(mockConsoleLog).toHaveBeenCalledWith('운동 추가:', expect.objectContaining({
-      exerciseId: 'bench-press',
-      exerciseName: '벤치프레스',
-      bodyPart: 'chest',
-      sets: 3,
-      weight: 20
-    }));
-  });
-
-  it('루틴 완료 버튼 클릭 시 콘솔에 로그가 출력된다', async () => {
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/chest/bench-press']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
-    const completeButton = screen.getByText('루틴 완료');
-    await user.click(completeButton);
-    
-    expect(mockConsoleLog).toHaveBeenCalledWith('루틴 완료:', expect.objectContaining({
-      exerciseId: 'bench-press',
-      exerciseName: '벤치프레스',
-      bodyPart: 'chest',
-      sets: 3,
-      weight: 20
-    }));
-  });
-
-  it('유산소 운동의 경우 중량 대신 시간 정보가 포함된다', async () => {
-    const user = userEvent.setup();
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/cardio/treadmill']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
-    const addButton = screen.getByText('운동 추가');
-    await user.click(addButton);
-    
-    expect(mockConsoleLog).toHaveBeenCalledWith('운동 추가:', expect.objectContaining({
-      exerciseId: 'treadmill',
-      exerciseName: '러닝머신',
-      bodyPart: 'cardio',
-      sets: 3,
-      duration: 30,
-      weight: undefined
-    }));
-  });
-
-  it('운동 정보가 올바르게 표시된다', () => {
-    render(
-      <MemoryRouter initialEntries={['/exercise-detail/chest/bench-press']}>
-        <Routes>
-          <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
-        </Routes>
-      </MemoryRouter>
-    );
-    
     expect(screen.getByText('벤치프레스')).toBeInTheDocument();
-    expect(screen.getByText('chest')).toBeInTheDocument();
-    expect(screen.getByText('바벨, 벤치')).toBeInTheDocument();
+    expect(screen.getByTestId('strength-set-row-1')).toBeInTheDocument();
+    expect(screen.getByText('운동 더 추가')).toBeInTheDocument();
+    expect(screen.getByText('완료')).toBeInTheDocument();
   });
-}); 
+
+  it('유산소 운동 상세 입력 화면이 렌더링된다', () => {
+    renderWithRoute('/exercise-detail/cardio/treadmill');
+
+    expect(screen.getByText('러닝머신')).toBeInTheDocument();
+    expect(screen.getByLabelText('시간(분)')).toBeInTheDocument();
+    expect(screen.queryByLabelText('중량(kg)')).not.toBeInTheDocument();
+  });
+
+  it('존재하지 않는 운동이면 에러 메시지를 표시한다', () => {
+    renderWithRoute('/exercise-detail/chest/not-found');
+
+    expect(screen.getByText('운동을 찾을 수 없습니다')).toBeInTheDocument();
+  });
+
+  it('근력 운동에서 완료 클릭 시 세트별 정보가 저장되고 제목 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await fillStrengthInputs(user);
+    await user.click(screen.getByText('완료'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/routine-title');
+
+    const draft = getTempRoutineData();
+    expect(draft).toHaveLength(1);
+    expect(draft[0]).toEqual(
+      expect.objectContaining({
+        exerciseId: 'bench-press',
+        exerciseName: '벤치프레스',
+        sets: 3,
+        setDetails: [
+          { setNumber: 1, weight: 20, reps: 12 },
+          { setNumber: 2, weight: 25, reps: 11 },
+          { setNumber: 3, weight: 30, reps: 10 }
+        ]
+      })
+    );
+  });
+
+  it('근력 운동에서 운동 더 추가 클릭 시 선택 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await fillStrengthInputs(user);
+    await user.click(screen.getByText('운동 더 추가'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/exercise-selection/chest');
+    expect(getTempRoutineData()).toHaveLength(1);
+  });
+
+  it('입력이 비어 있으면 완료 버튼이 비활성화된다', () => {
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    expect(screen.getByText('완료')).toBeDisabled();
+  });
+});

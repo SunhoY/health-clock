@@ -21,7 +21,7 @@ export function RoutineTitle() {
 
   useEffect(() => {
     // 기본 제목 생성
-    const defaultTitle = generateDefaultTitle(tempRoutineData);
+    const defaultTitle = generateDefaultTitle(getTempRoutineData());
     const initialForm = validateTitle(defaultTitle);
     setForm(initialForm);
   }, []);
@@ -66,7 +66,7 @@ export function RoutineTitle() {
 
     const savePayload = {
       title: form.title,
-      exercises: tempRoutineData,
+      exercises: getTempRoutineData(),
       createdAt: new Date()
     };
 
@@ -96,4 +96,12 @@ export function RoutineTitle() {
 // 임시 함수: 루틴 데이터 설정 (실제로는 전역 상태 관리나 라우터 상태를 사용)
 export const setTempRoutineData = (exercises: ExerciseDetail[]) => {
   tempRoutineData = exercises;
-}; 
+};
+
+export const getTempRoutineData = (): ExerciseDetail[] => {
+  return tempRoutineData;
+};
+
+export const appendTempRoutineData = (exercise: ExerciseDetail) => {
+  tempRoutineData = [...tempRoutineData, exercise];
+};

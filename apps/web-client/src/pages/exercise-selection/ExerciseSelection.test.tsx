@@ -25,7 +25,7 @@ describe('ExerciseSelection', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('가슴 운동 선택')).toBeInTheDocument();
+    expect(screen.getByText('가슴 운동')).toBeInTheDocument();
     expect(screen.getByText('벤치프레스')).toBeInTheDocument();
     expect(screen.getByText('푸쉬업')).toBeInTheDocument();
   });
@@ -39,7 +39,7 @@ describe('ExerciseSelection', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('등 운동 선택')).toBeInTheDocument();
+    expect(screen.getByText('등 운동')).toBeInTheDocument();
     expect(screen.getByText('바벨 로우')).toBeInTheDocument();
     expect(screen.getByText('렛풀다운')).toBeInTheDocument();
   });
@@ -53,7 +53,7 @@ describe('ExerciseSelection', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('invalid 운동 선택')).toBeInTheDocument();
+    expect(screen.getByText('invalid 운동')).toBeInTheDocument();
     expect(screen.getByText('선택된 부위에 해당하는 운동이 없습니다.')).toBeInTheDocument();
   });
 
@@ -66,6 +66,6 @@ describe('ExerciseSelection', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('가슴 운동 선택')).toBeInTheDocument();
+    expect(screen.getByText('가슴 운동')).toBeInTheDocument();
   });
 }); 

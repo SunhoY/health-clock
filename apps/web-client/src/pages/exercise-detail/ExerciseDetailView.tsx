@@ -1,175 +1,173 @@
-import { Exercise, FormState, FormConfig } from '../../types/exercise';
+import { Exercise, FormConfig } from '../../types/exercise';
+
+interface StrengthSetInput {
+  setNumber: number;
+  weightInput: string;
+  repsInput: string;
+}
 
 interface ExerciseDetailViewProps {
   exercise: Exercise;
-  formState: FormState;
-  formConfig: FormConfig;
   isCardio: boolean;
-  onSetsChange: (sets: number) => void;
-  onWeightChange: (weight: number) => void;
-  onDurationChange: (duration: number) => void;
+  setCount: number;
+  setRange: FormConfig['sets'];
+  strengthSets: StrengthSetInput[];
+  strengthErrors: Record<number, { weight?: string; reps?: string }>;
+  durationInput: string;
+  durationError?: string;
+  isFormValid: boolean;
+  onSetCountChange: (sets: number) => void;
+  onStrengthSetChange: (setNumber: number, field: 'weightInput' | 'repsInput', value: string) => void;
+  onDurationInputChange: (value: string) => void;
   onAddExercise: () => void;
   onCompleteRoutine: () => void;
 }
 
 export function ExerciseDetailView({
   exercise,
-  formState,
-  formConfig,
   isCardio,
-  onSetsChange,
-  onWeightChange,
-  onDurationChange,
+  setCount,
+  setRange,
+  strengthSets,
+  strengthErrors,
+  durationInput,
+  durationError,
+  isFormValid,
+  onSetCountChange,
+  onStrengthSetChange,
+  onDurationInputChange,
   onAddExercise,
   onCompleteRoutine
 }: ExerciseDetailViewProps) {
-  const handleIncrement = (field: 'sets' | 'weight' | 'duration') => {
-    const config = formConfig[field];
-    const currentValue = formState[field];
-    const newValue = Math.min(currentValue + config.step, config.max);
-    
-    switch (field) {
-      case 'sets':
-        onSetsChange(newValue);
-        break;
-      case 'weight':
-        onWeightChange(newValue);
-        break;
-      case 'duration':
-        onDurationChange(newValue);
-        break;
-    }
-  };
-
-  const handleDecrement = (field: 'sets' | 'weight' | 'duration') => {
-    const config = formConfig[field];
-    const currentValue = formState[field];
-    const newValue = Math.max(currentValue - config.step, config.min);
-    
-    switch (field) {
-      case 'sets':
-        onSetsChange(newValue);
-        break;
-      case 'weight':
-        onWeightChange(newValue);
-        break;
-      case 'duration':
-        onDurationChange(newValue);
-        break;
-    }
-  };
-
-  const renderSpinner = (
-    field: 'sets' | 'weight' | 'duration',
-    label: string,
-    unit: string,
-    disabled = false
-  ) => {
-    const config = formConfig[field];
-    const value = formState[field];
-    const error = formState.errors[field];
-
-    return (
-      <div className="mb-6">
-        <label className="block text-lg font-medium mb-3 text-gray-200">
-          {label}
-        </label>
-        <div className="flex items-center space-x-4">
-          <button
-            type="button"
-            onClick={() => handleDecrement(field)}
-            disabled={disabled || value <= config.min}
-            className="w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 rounded-lg flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={`${label} 감소`}
-          >
-            <span className="text-xl font-bold">-</span>
-          </button>
-          
-          <div className="flex-1 text-center">
-            <span className="text-3xl font-bold text-white">
-              {value}
-            </span>
-            <span className="text-lg text-gray-400 ml-2">{unit}</span>
-            {error && (
-              <div className="text-red-400 text-sm mt-1">{error}</div>
-            )}
-          </div>
-          
-          <button
-            type="button"
-            onClick={() => handleIncrement(field)}
-            disabled={disabled || value >= config.max}
-            className="w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 rounded-lg flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={`${label} 증가`}
-          >
-            <span className="text-xl font-bold">+</span>
-          </button>
-        </div>
-      </div>
-    );
-  };
+  const canDecreaseSets = setCount > setRange.min;
+  const canIncreaseSets = setCount < setRange.max;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            {exercise.name} 상세 설정
-          </h1>
-          <p className="text-gray-400 text-lg">
-            운동 세부사항을 입력해주세요
-          </p>
+    <div className="min-h-screen bg-gray-900 px-6 py-8 text-white">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col">
+        <div className="mb-7 text-center">
+          <h1 className="text-3xl font-bold">{exercise.name}</h1>
         </div>
 
-        {/* Exercise Info */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-3">선택된 운동</h2>
-          <div className="space-y-2">
-            <p><span className="text-gray-400">운동명:</span> {exercise.name}</p>
-            <p><span className="text-gray-400">부위:</span> {exercise.bodyPart}</p>
-            {exercise.equipment && exercise.equipment.length > 0 && (
-              <p><span className="text-gray-400">장비:</span> {exercise.equipment.join(', ')}</p>
-            )}
-            {exercise.difficulty && (
-              <p><span className="text-gray-400">난이도:</span> {exercise.difficulty}</p>
-            )}
+        <div className="flex-1 space-y-4 pb-32">
+          {!isCardio && (
+            <section className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+              <p className="mb-3 text-sm text-gray-400">세트 수</p>
+              <div className="flex items-center justify-between rounded-xl bg-gray-900 px-4 py-3">
+                <button
+                  type="button"
+                  aria-label="세트 수 감소"
+                  disabled={!canDecreaseSets}
+                  onClick={() => onSetCountChange(setCount - 1)}
+                  className="h-10 w-10 rounded-full bg-gray-700 text-xl font-bold text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-800 disabled:text-gray-500"
+                >
+                  -
+                </button>
+                <p className="text-xl font-semibold">{setCount}세트</p>
+                <button
+                  type="button"
+                  aria-label="세트 수 증가"
+                  disabled={!canIncreaseSets}
+                  onClick={() => onSetCountChange(setCount + 1)}
+                  className="h-10 w-10 rounded-full bg-gray-700 text-xl font-bold text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-800 disabled:text-gray-500"
+                >
+                  +
+                </button>
+              </div>
+            </section>
+          )}
+
+          {!isCardio &&
+            strengthSets.map((set) => {
+              const error = strengthErrors[set.setNumber];
+
+              return (
+                <section
+                  key={set.setNumber}
+                  className="rounded-2xl border border-gray-700 bg-gray-800 p-4"
+                  data-testid={`strength-set-row-${set.setNumber}`}
+                >
+                  <p className="mb-3 text-base font-semibold text-white">{set.setNumber}세트</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor={`weight-input-${set.setNumber}`} className="mb-2 block text-xs text-gray-400">
+                        중량(kg)
+                      </label>
+                      <input
+                        id={`weight-input-${set.setNumber}`}
+                        inputMode="numeric"
+                        value={set.weightInput}
+                        onChange={(event) =>
+                          onStrengthSetChange(set.setNumber, 'weightInput', event.target.value)
+                        }
+                        className="w-full rounded-xl border border-gray-600 bg-gray-900 px-3 py-3 text-lg font-semibold text-white outline-none focus:border-cyan-400"
+                        placeholder="0"
+                      />
+                      {error?.weight && <p className="mt-2 text-xs text-rose-400">{error.weight}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor={`reps-input-${set.setNumber}`} className="mb-2 block text-xs text-gray-400">
+                        횟수(reps)
+                      </label>
+                      <input
+                        id={`reps-input-${set.setNumber}`}
+                        inputMode="numeric"
+                        value={set.repsInput}
+                        onChange={(event) => onStrengthSetChange(set.setNumber, 'repsInput', event.target.value)}
+                        className="w-full rounded-xl border border-gray-600 bg-gray-900 px-3 py-3 text-lg font-semibold text-white outline-none focus:border-cyan-400"
+                        placeholder="0"
+                      />
+                      {error?.reps && <p className="mt-2 text-xs text-rose-400">{error.reps}</p>}
+                    </div>
+                  </div>
+                </section>
+              );
+            })}
+
+          {isCardio && (
+            <section className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+              <label htmlFor="duration-input" className="mb-2 block text-sm text-gray-400">
+                시간(분)
+              </label>
+              <input
+                id="duration-input"
+                inputMode="numeric"
+                value={durationInput}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  if (/^\d*$/.test(next)) {
+                    onDurationInputChange(next);
+                  }
+                }}
+                className="w-full rounded-xl border border-gray-600 bg-gray-900 px-3 py-3 text-2xl font-bold text-white outline-none focus:border-cyan-400"
+                placeholder="0"
+              />
+              {durationError && <p className="mt-2 text-xs text-rose-400">{durationError}</p>}
+            </section>
+          )}
+        </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-800 bg-gray-900/95 backdrop-blur">
+          <div className="mx-auto grid w-full max-w-md grid-cols-2 gap-3 px-6 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-3">
+            <button
+              type="button"
+              onClick={onAddExercise}
+              disabled={!isFormValid}
+              className="rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:border-gray-800 disabled:bg-gray-900 disabled:text-gray-600"
+            >
+              운동 더 추가
+            </button>
+            <button
+              type="button"
+              onClick={onCompleteRoutine}
+              disabled={!isFormValid}
+              className="rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-500"
+            >
+              완료
+            </button>
           </div>
-        </div>
-
-        {/* Form */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-6">운동 설정</h2>
-          
-          {/* Sets */}
-          {renderSpinner('sets', '세트 수', '세트')}
-          
-          {/* Weight (웨이트 운동만) */}
-          {!isCardio && renderSpinner('weight', '중량', 'kg')}
-          
-          {/* Duration (유산소 운동만) */}
-          {isCardio && renderSpinner('duration', '시간', '분')}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <button
-            onClick={onAddExercise}
-            disabled={!formState.isValid}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            운동 추가
-          </button>
-          
-          <button
-            onClick={onCompleteRoutine}
-            disabled={!formState.isValid}
-            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            루틴 완료
-          </button>
         </div>
       </div>
     </div>
   );
-} 
+}
