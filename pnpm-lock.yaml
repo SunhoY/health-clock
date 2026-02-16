@@ -216,8 +216,6 @@ importers:
 
   apps/nest-backend: {}
 
-  apps/nest-backend-e2e: {}
-
   apps/web-client: {}
 
 packages:
