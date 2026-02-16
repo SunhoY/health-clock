@@ -49,6 +49,9 @@ export const RestPeriod: Story = {
     viewModel: {
       ...baseViewModel,
       currentSet: 2,
+      previousSetLabel: '이전 1 / 3 세트',
+      previousWeight: 20,
+      previousReps: 10,
       nextSetLabel: '다음 2 / 3 세트',
       nextWeight: 20,
       nextReps: 10,

@@ -90,6 +90,9 @@ describe('WorkoutView', () => {
     const restViewModel: WorkoutViewModel = {
       ...mockViewModel,
       currentSet: 2,
+      previousSetLabel: '이전 1 / 3 세트',
+      previousWeight: 20,
+      previousReps: 10,
       nextSetLabel: '다음 2 / 3 세트',
       nextWeight: 20,
       nextReps: 10,
@@ -107,11 +110,15 @@ describe('WorkoutView', () => {
 
     expect(screen.getByText('휴식 시간')).toBeInTheDocument();
     expect(screen.getByText('01:00')).toBeInTheDocument();
+    expect(screen.getByText('이전 1 / 3 세트')).toBeInTheDocument();
     expect(screen.getByText('다음 2 / 3 세트')).toBeInTheDocument();
     expect(screen.getAllByText('20kg')).toHaveLength(2);
     expect(screen.getAllByText('10회')).toHaveLength(2);
     expect(screen.getByText('바로 다음 세트')).toBeInTheDocument();
     expect(screen.queryByText('세트 완료')).not.toBeInTheDocument();
+
+    expect(screen.getByText('이전 1 / 3 세트')).toHaveClass('text-slate-500');
+    expect(screen.getByText('다음 2 / 3 세트')).toHaveClass('text-emerald-300');
   });
 
   it('세트 완료 버튼 클릭 시 콜백이 호출된다', async () => {

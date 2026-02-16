@@ -127,7 +127,7 @@ describe('Workout', () => {
     );
   });
 
-  it('세트 완료 후 휴식 화면에 다음 세트 정보와 지표가 표시된다', async () => {
+  it('세트 완료 후 휴식 화면에 이전/다음 세트 정보가 위계에 맞게 표시된다', async () => {
     const user = userEvent.setup();
     const mockExercises: ExerciseDetail[] = [
       {
@@ -149,10 +149,13 @@ describe('Workout', () => {
 
     await user.click(screen.getByText('세트 완료'));
 
+    expect(screen.getByText('이전 1 / 3 세트')).toBeInTheDocument();
     expect(screen.getByText('다음 2 / 3 세트')).toBeInTheDocument();
     expect(screen.getAllByText('20kg')).toHaveLength(2);
     expect(screen.getAllByText('10회')).toHaveLength(2);
     expect(screen.getByText('바로 다음 세트')).toBeInTheDocument();
+    expect(screen.getByText('이전 1 / 3 세트')).toHaveClass('text-slate-500');
+    expect(screen.getByText('다음 2 / 3 세트')).toHaveClass('text-emerald-300');
   });
 
   it('휴식 건너뛰기 동작 후 다시 세트 완료 버튼이 표시된다', async () => {

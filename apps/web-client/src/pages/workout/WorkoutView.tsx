@@ -15,10 +15,16 @@ export function WorkoutView({
   onCompleteSet,
   onSkipRest
 }: WorkoutViewProps) {
-  const metricTexts = [
+  const activeMetricTexts = [
     viewModel.weight !== undefined ? `${viewModel.weight}kg` : undefined,
     viewModel.reps !== undefined ? `${viewModel.reps}회` : undefined,
     viewModel.duration !== undefined ? `${viewModel.duration}분` : undefined
+  ].filter((value): value is string => value !== undefined);
+
+  const previousMetricTexts = [
+    viewModel.previousWeight !== undefined ? `${viewModel.previousWeight}kg` : undefined,
+    viewModel.previousReps !== undefined ? `${viewModel.previousReps}회` : undefined,
+    viewModel.previousDuration !== undefined ? `${viewModel.previousDuration}분` : undefined
   ].filter((value): value is string => value !== undefined);
 
   const nextMetricTexts = [
@@ -53,42 +59,73 @@ export function WorkoutView({
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
             {viewModel.exerciseName}
           </h1>
-          <p className="mt-4 text-2xl font-medium text-slate-200 sm:text-3xl">
-            {viewModel.currentSet} / {viewModel.totalSets} 세트
-          </p>
-          {metricTexts.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              {metricTexts.map(text => (
-                <span
-                  key={text}
-                  className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-base font-medium text-slate-100"
-                >
-                  {text}
-                </span>
-              ))}
-            </div>
-          )}
-          {isResting && (
-            <div className="mt-8">
-              <p className="text-base text-slate-300">휴식 시간</p>
-              <p className="mt-2 text-5xl font-bold tabular-nums sm:text-6xl">
-                {formatTime(timerState.timeRemaining)}
+          {!isResting && (
+            <>
+              <p className="mt-4 text-2xl font-medium text-cyan-200 sm:text-3xl">
+                {viewModel.currentSet} / {viewModel.totalSets} 세트
               </p>
-              {viewModel.nextSetLabel && (
-                <p className="mt-6 text-lg font-semibold text-slate-100">{viewModel.nextSetLabel}</p>
-              )}
-              {nextMetricTexts.length > 0 && (
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  {nextMetricTexts.map(text => (
+              {activeMetricTexts.length > 0 && (
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {activeMetricTexts.map(text => (
                     <span
-                      key={`next-${text}`}
-                      className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-base font-medium text-slate-100"
+                      key={text}
+                      className="rounded-full border border-cyan-600/70 bg-cyan-500/20 px-4 py-2 text-base font-medium text-cyan-100"
                     >
                       {text}
                     </span>
                   ))}
                 </div>
               )}
+            </>
+          )}
+          {isResting && (
+            <div className="mt-8 w-full">
+              <p className="text-base text-slate-300">휴식 시간</p>
+              <p className="mt-2 text-5xl font-bold tabular-nums sm:text-6xl">
+                {formatTime(timerState.timeRemaining)}
+              </p>
+
+              <div className="mt-8 space-y-6">
+                {(viewModel.previousSetLabel || previousMetricTexts.length > 0) && (
+                  <section className="space-y-2" data-testid="previous-set-info">
+                    {viewModel.previousSetLabel && (
+                      <p className="text-sm font-medium text-slate-500">{viewModel.previousSetLabel}</p>
+                    )}
+                    {previousMetricTexts.length > 0 && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {previousMetricTexts.map(text => (
+                          <span
+                            key={`previous-${text}`}
+                            className="rounded-full border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-sm font-medium text-slate-500"
+                          >
+                            {text}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {(viewModel.nextSetLabel || nextMetricTexts.length > 0) && (
+                  <section className="space-y-2" data-testid="next-set-info">
+                    {viewModel.nextSetLabel && (
+                      <p className="text-2xl font-semibold text-emerald-300">{viewModel.nextSetLabel}</p>
+                    )}
+                    {nextMetricTexts.length > 0 && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {nextMetricTexts.map(text => (
+                          <span
+                            key={`next-${text}`}
+                            className="rounded-full border border-emerald-400/60 bg-emerald-500/20 px-4 py-2 text-base font-semibold text-emerald-100"
+                          >
+                            {text}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+              </div>
             </div>
           )}
         </main>

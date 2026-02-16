@@ -126,6 +126,10 @@ export interface WorkoutViewModel {
   weight?: number;
   reps?: number;
   duration?: number;
+  previousSetLabel?: string;
+  previousWeight?: number;
+  previousReps?: number;
+  previousDuration?: number;
   nextSetLabel?: string;
   nextWeight?: number;
   nextReps?: number;

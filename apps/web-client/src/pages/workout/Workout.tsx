@@ -225,6 +225,9 @@ export function Workout() {
   }
 
   const progress = calculateProgress();
+  const lastCompletedSet = session.completedSets.at(-1);
+  const isShowingPreviousSet = isResting && lastCompletedSet?.exerciseId === progress.currentExercise.exerciseId;
+
   const viewModel: WorkoutViewModel = {
     exerciseName: progress.currentExercise.exerciseName,
     currentExerciseIndex: progress.currentExerciseIndex,
@@ -235,6 +238,10 @@ export function Workout() {
     weight: progress.currentExercise.weight,
     reps: progress.currentExercise.reps,
     duration: progress.currentExercise.duration,
+    previousSetLabel: isShowingPreviousSet ? `이전 ${lastCompletedSet.setNumber} / ${progress.totalSets} 세트` : undefined,
+    previousWeight: isShowingPreviousSet ? lastCompletedSet.weight : undefined,
+    previousReps: isShowingPreviousSet ? lastCompletedSet.reps : undefined,
+    previousDuration: isShowingPreviousSet ? lastCompletedSet.duration : undefined,
     nextSetLabel: isResting ? `다음 ${progress.currentSet} / ${progress.totalSets} 세트` : undefined,
     nextWeight: isResting ? progress.currentExercise.weight : undefined,
     nextReps: isResting ? progress.currentExercise.reps : undefined,
