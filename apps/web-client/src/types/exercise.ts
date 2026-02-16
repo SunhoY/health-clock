@@ -18,6 +18,7 @@ export interface ExerciseDetail {
   bodyPart: string;
   sets: number;
   weight?: number; // 유산소 운동일 경우 null
+  reps?: number;
   duration?: number; // 유산소 운동일 경우 필수
   restTime?: number; // 세트 간 휴식 시간 (기본값 설정)
 }
@@ -113,6 +114,22 @@ export interface WorkoutProgress {
   currentSet: number;
   totalSets: number;
   percentComplete: number;
+}
+
+export interface WorkoutViewModel {
+  exerciseName: string;
+  currentExerciseIndex: number;
+  totalExercises: number;
+  currentSet: number;
+  totalSets: number;
+  percentComplete: number;
+  weight?: number;
+  reps?: number;
+  duration?: number;
+  nextSetLabel?: string;
+  nextWeight?: number;
+  nextReps?: number;
+  nextDuration?: number;
 }
 
 export const FORM_CONFIG: FormConfig = {

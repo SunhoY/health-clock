@@ -4,6 +4,7 @@ import { WorkoutView } from './WorkoutView';
 import { 
   WorkoutSession, 
   WorkoutProgress, 
+  WorkoutViewModel,
   TimerState, 
   ExerciseDetail,
   CompletedSet 
@@ -121,6 +122,7 @@ export function Workout() {
       exerciseId: currentExercise.exerciseId,
       setNumber: session.currentSet,
       weight: currentExercise.weight,
+      reps: currentExercise.reps,
       duration: currentExercise.duration,
       restTime: currentExercise.restTime || 60,
       completedAt: new Date(),
@@ -223,10 +225,25 @@ export function Workout() {
   }
 
   const progress = calculateProgress();
+  const viewModel: WorkoutViewModel = {
+    exerciseName: progress.currentExercise.exerciseName,
+    currentExerciseIndex: progress.currentExerciseIndex,
+    totalExercises: progress.totalExercises,
+    currentSet: progress.currentSet,
+    totalSets: progress.totalSets,
+    percentComplete: progress.percentComplete,
+    weight: progress.currentExercise.weight,
+    reps: progress.currentExercise.reps,
+    duration: progress.currentExercise.duration,
+    nextSetLabel: isResting ? `다음 ${progress.currentSet} / ${progress.totalSets} 세트` : undefined,
+    nextWeight: isResting ? progress.currentExercise.weight : undefined,
+    nextReps: isResting ? progress.currentExercise.reps : undefined,
+    nextDuration: isResting ? progress.currentExercise.duration : undefined
+  };
 
   return (
     <WorkoutView
-      progress={progress}
+      viewModel={viewModel}
       timerState={timerState}
       isResting={isResting}
       onCompleteSet={handleCompleteSet}

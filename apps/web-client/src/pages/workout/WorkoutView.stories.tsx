@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { WorkoutView } from './WorkoutView';
-import { WorkoutProgress, TimerState } from '../../types/exercise';
+import { TimerState, WorkoutViewModel } from '../../types/exercise';
 
 const meta: Meta<typeof WorkoutView> = {
   title: 'Pages/Workout/WorkoutView',
@@ -18,33 +18,27 @@ const meta: Meta<typeof WorkoutView> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-
-
-const baseProgress: WorkoutProgress = {
-  currentExercise: {
-    exerciseId: 'bench-press',
-    exerciseName: '벤치프레스',
-    bodyPart: 'chest',
-    sets: 3,
-    weight: 20
-  },
-  totalExercises: 1,
+const baseViewModel: WorkoutViewModel = {
+  exerciseName: '벤치프레스',
   currentExerciseIndex: 0,
+  totalExercises: 1,
   currentSet: 1,
   totalSets: 3,
-  percentComplete: 33.33
+  percentComplete: 33.33,
+  weight: 20,
+  reps: 10,
 };
 
 const baseTimerState: TimerState = {
   isRunning: false,
   timeRemaining: 60,
   totalTime: 60,
-  isPaused: false
+  isPaused: false,
 };
 
 export const ActiveSet: Story = {
   args: {
-    progress: baseProgress,
+    viewModel: baseViewModel,
     timerState: baseTimerState,
     isResting: false,
   },
@@ -52,7 +46,13 @@ export const ActiveSet: Story = {
 
 export const RestPeriod: Story = {
   args: {
-    progress: baseProgress,
+    viewModel: {
+      ...baseViewModel,
+      currentSet: 2,
+      nextSetLabel: '다음 2 / 3 세트',
+      nextWeight: 20,
+      nextReps: 10,
+    },
     timerState: baseTimerState,
     isResting: true,
   },
@@ -60,10 +60,10 @@ export const RestPeriod: Story = {
 
 export const FirstSet: Story = {
   args: {
-    progress: {
-      ...baseProgress,
+    viewModel: {
+      ...baseViewModel,
       currentSet: 1,
-      percentComplete: 0
+      percentComplete: 0,
     },
     timerState: baseTimerState,
     isResting: false,
@@ -72,20 +72,12 @@ export const FirstSet: Story = {
 
 export const LastSet: Story = {
   args: {
-    progress: {
-      ...baseProgress,
+    viewModel: {
+      ...baseViewModel,
       currentSet: 3,
       totalSets: 3,
-      percentComplete: 66.67
+      percentComplete: 66.67,
     },
-    timerState: baseTimerState,
-    isResting: false,
-  },
-};
-
-export const WeightExercise: Story = {
-  args: {
-    progress: baseProgress,
     timerState: baseTimerState,
     isResting: false,
   },
@@ -93,15 +85,12 @@ export const WeightExercise: Story = {
 
 export const CardioExercise: Story = {
   args: {
-    progress: {
-      ...baseProgress,
-      currentExercise: {
-        exerciseId: 'running',
-        exerciseName: '러닝',
-        bodyPart: 'cardio',
-        sets: 1,
-        duration: 30
-      }
+    viewModel: {
+      ...baseViewModel,
+      exerciseName: '러닝',
+      weight: undefined,
+      reps: undefined,
+      duration: 30,
     },
     timerState: baseTimerState,
     isResting: false,
