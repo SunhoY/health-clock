@@ -41,6 +41,23 @@ describe('PresetSelection', () => {
     await user.click(presetCard);
 
     expect(consoleSpy).toHaveBeenCalledWith('선택된 프리셋:', '1');
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/workout',
+      expect.objectContaining({
+        state: expect.objectContaining({
+          presetId: '1',
+          presetTitle: '전신 운동',
+          exercises: expect.arrayContaining([
+            expect.objectContaining({
+              exerciseId: '1',
+              exerciseName: '스쿼트',
+              bodyPart: '전신',
+              sets: 3,
+            }),
+          ]),
+        }),
+      })
+    );
 
     consoleSpy.mockRestore();
   });

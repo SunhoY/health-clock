@@ -11,16 +11,24 @@ const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
+let mockLocationState: unknown = undefined;
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
+  useLocation: () => ({
+    state: mockLocationState,
+    pathname: '/workout',
+    search: '',
+    hash: '',
+  }),
 }));
 
 describe('Workout', () => {
   beforeEach(() => {
     mockConsoleLog.mockClear();
     mockNavigate.mockClear();
+    mockLocationState = undefined;
     setTempWorkoutData([]);
   });
 
@@ -62,6 +70,31 @@ describe('Workout', () => {
     expect(screen.getByText('chest')).toBeInTheDocument();
     expect(screen.getByText('1 / 3')).toBeInTheDocument();
     expect(screen.getByText('20kg')).toBeInTheDocument();
+  });
+
+  it('라우터 state로 전달된 운동 데이터가 우선 적용된다', () => {
+    mockLocationState = {
+      exercises: [
+        {
+          exerciseId: 'row',
+          exerciseName: '로우',
+          bodyPart: '등',
+          sets: 4,
+          weight: 40,
+        },
+      ],
+    };
+
+    render(
+      <MemoryRouter>
+        <Workout />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('로우')).toBeInTheDocument();
+    expect(screen.getByText('등')).toBeInTheDocument();
+    expect(screen.getByText('1 / 4')).toBeInTheDocument();
+    expect(screen.getByText('40kg')).toBeInTheDocument();
   });
 
   it('세트 완료 버튼 클릭 시 콘솔에 로그가 출력된다', async () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { WorkoutView } from './WorkoutView';
 import { 
   WorkoutSession, 
@@ -12,11 +12,23 @@ import {
 // 임시로 운동 데이터를 저장할 상태 (실제로는 전역 상태 관리나 API를 사용)
 let tempWorkoutData: ExerciseDetail[] = [];
 
+interface WorkoutRouteState {
+  presetId?: string;
+  presetTitle?: string;
+  exercises?: ExerciseDetail[];
+}
+
 export function Workout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = (location.state as WorkoutRouteState | null) ?? null;
+  const routeExercises = routeState?.exercises ?? [];
+  const initialExercises = routeExercises.length > 0 ? routeExercises : tempWorkoutData;
+
   const [session, setSession] = useState<WorkoutSession>({
     id: Date.now().toString(),
-    exercises: tempWorkoutData,
+    presetId: routeState?.presetId,
+    exercises: initialExercises,
     currentExerciseIndex: 0,
     currentSet: 1,
     startTime: new Date(),

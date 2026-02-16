@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { PresetSelectionView } from './PresetSelectionView';
+import { ExerciseDetail } from '../../types/exercise';
 
 // 임시 프리셋 데이터 (나중에 실제 데이터로 교체)
 const mockPresets = [
@@ -30,10 +31,31 @@ const mockPresets = [
 export const PresetSelection = () => {
   const navigate = useNavigate();
 
+  const toExerciseDetails = (
+    exercises: typeof mockPresets[number]['exercises']
+  ): ExerciseDetail[] =>
+    exercises.map((exercise) => ({
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      bodyPart: exercise.part,
+      sets: exercise.sets,
+      weight: exercise.weight,
+      duration: exercise.duration,
+      restTime: 60,
+    }));
+
   const handlePresetSelect = (presetId: string) => {
-    // TODO: 운동 진행 화면으로 라우팅
+    const selectedPreset = mockPresets.find((preset) => preset.id === presetId);
+    if (!selectedPreset) return;
+
     console.log('선택된 프리셋:', presetId);
-    // navigate('/workout', { state: { presetId } });
+    navigate('/workout', {
+      state: {
+        presetId: selectedPreset.id,
+        presetTitle: selectedPreset.title,
+        exercises: toExerciseDetails(selectedPreset.exercises),
+      },
+    });
   };
 
   const handleAddWorkout = () => {
