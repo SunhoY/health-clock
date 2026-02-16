@@ -26,14 +26,6 @@ interface ExerciseDetailViewProps {
   onCompleteRoutine: () => void;
 }
 
-const getDisplayValue = (value: string | undefined, touched: boolean): string => {
-  if (touched) {
-    return value ?? '';
-  }
-
-  return value ?? '0';
-};
-
 export function ExerciseDetailView({
   exercise,
   isCardio,
@@ -110,7 +102,7 @@ export function ExerciseDetailView({
                           type="button"
                           aria-label={`${set.setNumber}세트 중량 감소`}
                           onClick={() => onStrengthSetStepChange(set.setNumber, 'weight', -5)}
-                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                          className="h-10 min-w-0 flex-1 rounded-lg bg-gray-700 text-lg font-bold text-white transition-colors hover:bg-gray-600"
                         >
                           -
                         </button>
@@ -118,15 +110,16 @@ export function ExerciseDetailView({
                           id={`weight-input-${set.setNumber}`}
                           aria-label="중량(kg)"
                           inputMode="numeric"
-                          value={getDisplayValue(set.weightInput, set.weightTouched)}
+                          value={set.weightInput ?? ''}
                           onChange={(event) => onStrengthSetChange(set.setNumber, 'weight', event.target.value)}
-                          className="w-full rounded-lg border border-gray-600 bg-gray-900 px-2 py-2 text-sm font-semibold text-white outline-none focus:border-cyan-400"
+                          placeholder="0"
+                          className="h-11 w-1/2 rounded-lg border border-gray-600 bg-gray-900 px-2 text-center text-sm font-semibold text-white outline-none focus:border-cyan-400"
                         />
                         <button
                           type="button"
                           aria-label={`${set.setNumber}세트 중량 증가`}
                           onClick={() => onStrengthSetStepChange(set.setNumber, 'weight', 5)}
-                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                          className="h-10 min-w-0 flex-1 rounded-lg bg-gray-700 text-lg font-bold text-white transition-colors hover:bg-gray-600"
                         >
                           +
                         </button>
@@ -142,7 +135,7 @@ export function ExerciseDetailView({
                           type="button"
                           aria-label={`${set.setNumber}세트 횟수 감소`}
                           onClick={() => onStrengthSetStepChange(set.setNumber, 'reps', -1)}
-                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                          className="h-10 min-w-0 flex-1 rounded-lg bg-gray-700 text-lg font-bold text-white transition-colors hover:bg-gray-600"
                         >
                           -
                         </button>
@@ -150,15 +143,16 @@ export function ExerciseDetailView({
                           id={`reps-input-${set.setNumber}`}
                           aria-label="횟수"
                           inputMode="numeric"
-                          value={getDisplayValue(set.repsInput, set.repsTouched)}
+                          value={set.repsInput ?? ''}
                           onChange={(event) => onStrengthSetChange(set.setNumber, 'reps', event.target.value)}
-                          className="w-full rounded-lg border border-gray-600 bg-gray-900 px-2 py-2 text-sm font-semibold text-white outline-none focus:border-cyan-400"
+                          placeholder="0"
+                          className="h-11 w-1/2 rounded-lg border border-gray-600 bg-gray-900 px-2 text-center text-sm font-semibold text-white outline-none focus:border-cyan-400"
                         />
                         <button
                           type="button"
                           aria-label={`${set.setNumber}세트 횟수 증가`}
                           onClick={() => onStrengthSetStepChange(set.setNumber, 'reps', 1)}
-                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                          className="h-10 min-w-0 flex-1 rounded-lg bg-gray-700 text-lg font-bold text-white transition-colors hover:bg-gray-600"
                         >
                           +
                         </button>

@@ -169,7 +169,7 @@ export interface WorkoutViewModel {
 
 export const FORM_CONFIG: FormConfig = {
   sets: { min: 1, max: 10, step: 1, default: 3 },
-  weight: { min: 0, max: 500, step: 5, default: 20 },
+  weight: { min: 0, max: 300, step: 5, default: 20 },
   duration: { min: 1, max: 180, step: 1, default: 30 }
 };
 

@@ -32,17 +32,29 @@ const normalizeNumberInput = (value: string): string | undefined => {
     return undefined;
   }
 
-  const trimmed = value.replace(/^0+/, '');
-  return trimmed === '' ? undefined : trimmed;
+  if (value === '') {
+    return undefined;
+  }
+
+  return String(Number(value));
 };
 
-const parsePositiveInt = (value?: string): number | undefined => {
+const parseNonNegativeInt = (value?: string): number | undefined => {
   if (!value) {
     return undefined;
   }
 
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return undefined;
+  }
+
+  return parsed;
+};
+
+const parsePositiveInt = (value?: string): number | undefined => {
+  const parsed = parseNonNegativeInt(value);
+  if (parsed === undefined || parsed <= 0) {
     return undefined;
   }
 
@@ -124,8 +136,8 @@ export function ExerciseDetail() {
     }
 
     return strengthSets.reduce<Record<number, { weight?: string; reps?: string }>>((acc, set) => {
-      const weight = parsePositiveInt(set.weightInput);
-      const reps = parsePositiveInt(set.repsInput);
+      const weight = parseNonNegativeInt(set.weightInput);
+      const reps = parseNonNegativeInt(set.repsInput);
 
       if (weight === undefined || weight > FORM_CONFIG.weight.max) {
         acc[set.setNumber] = {
@@ -187,9 +199,9 @@ export function ExerciseDetail() {
       }
 
       const inputValue = field === 'weight' ? target.weightInput : target.repsInput;
-      const currentValue = parsePositiveInt(inputValue) ?? 0;
+      const currentValue = parseNonNegativeInt(inputValue) ?? 0;
       const nextValue = Math.max(0, currentValue + delta);
-      const normalized = nextValue > 0 ? String(nextValue) : undefined;
+      const normalized = String(nextValue);
 
       return updateStrengthField(prev, setNumber, field, normalized, true);
     });
@@ -218,8 +230,8 @@ export function ExerciseDetail() {
 
     const setDetails = strengthSets.map((set) => ({
       setNumber: set.setNumber,
-      weight: parsePositiveInt(set.weightInput),
-      reps: parsePositiveInt(set.repsInput)
+      weight: parseNonNegativeInt(set.weightInput),
+      reps: parseNonNegativeInt(set.repsInput)
     }));
 
     if (setDetails.some((set) => set.weight === undefined || set.reps === undefined)) {

@@ -144,6 +144,28 @@ describe('ExerciseDetail', () => {
     ]);
   });
 
+  it('빈 상태에서 감소 버튼을 눌러도 0 아래로 내려가지 않는다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    const minusWeight = screen.getByRole('button', { name: '1세트 중량 감소' });
+    const minusReps = screen.getByRole('button', { name: '1세트 횟수 감소' });
+    await user.click(minusWeight);
+    await user.click(minusWeight);
+    await user.click(minusReps);
+    await user.click(minusReps);
+
+    const weightInputs = screen.getAllByLabelText('중량(kg)') as HTMLInputElement[];
+    const repsInputs = screen.getAllByLabelText('횟수') as HTMLInputElement[];
+    expect(weightInputs[0].value).toBe('0');
+    expect(repsInputs[0].value).toBe('0');
+
+    await user.click(screen.getByRole('button', { name: '1세트 중량 증가' }));
+    await user.click(screen.getByRole('button', { name: '1세트 횟수 증가' }));
+    expect(weightInputs[0].value).toBe('5');
+    expect(repsInputs[0].value).toBe('1');
+  });
+
   it('입력이 비어 있으면 완료 버튼이 비활성화된다', () => {
     renderWithRoute('/exercise-detail/chest/bench-press');
 

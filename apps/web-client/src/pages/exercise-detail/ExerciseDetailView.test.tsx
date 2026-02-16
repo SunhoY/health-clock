@@ -64,6 +64,12 @@ describe('ExerciseDetailView', () => {
     expect(screen.queryByText('횟수(reps)')).not.toBeInTheDocument();
   });
 
+  it('초기 입력은 0 placeholder를 보여준다', () => {
+    render(<ExerciseDetailView {...defaultProps} exercise={mockExercise} isCardio={false} />);
+
+    expect(screen.getAllByPlaceholderText('0').length).toBeGreaterThan(0);
+  });
+
   it('세트 수 증가/감소 버튼 클릭 시 콜백이 호출된다', async () => {
     const user = userEvent.setup();
     render(<ExerciseDetailView {...defaultProps} exercise={mockExercise} isCardio={false} />);
