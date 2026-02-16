@@ -11,6 +11,7 @@ const meta: Meta<typeof ExerciseDetailView> = {
   argTypes: {
     onSetCountChange: { action: 'set count changed' },
     onStrengthSetChange: { action: 'strength set changed' },
+    onStrengthSetStepChange: { action: 'strength set step changed' },
     onDurationInputChange: { action: 'duration changed' },
     onAddExercise: { action: 'add exercise clicked' },
     onCompleteRoutine: { action: 'complete routine clicked' }
@@ -37,9 +38,9 @@ const baseArgs = {
   setCount: 3,
   setRange: { min: 1, max: 10, step: 1, default: 3 },
   strengthSets: [
-    { setNumber: 1, weightInput: '20', repsInput: '10' },
-    { setNumber: 2, weightInput: '25', repsInput: '8' },
-    { setNumber: 3, weightInput: '25', repsInput: '8' }
+    { setNumber: 1, weightInput: '20', repsInput: '10', weightTouched: true, repsTouched: true },
+    { setNumber: 2, weightInput: '25', repsInput: '8', weightTouched: true, repsTouched: true },
+    { setNumber: 3, weightInput: '25', repsInput: '8', weightTouched: true, repsTouched: true }
   ],
   strengthErrors: {},
   durationInput: '30',

@@ -25,16 +25,19 @@ const renderWithRoute = (route: string) => {
   );
 };
 
-const fillStrengthInputs = async (user: ReturnType<typeof userEvent.setup>) => {
+const fillSetInput = async (
+  user: ReturnType<typeof userEvent.setup>,
+  setIndex: number,
+  weight: string,
+  reps: string
+) => {
   const weightInputs = screen.getAllByLabelText('중량(kg)');
-  const repsInputs = screen.getAllByLabelText('횟수(reps)');
+  const repsInputs = screen.getAllByLabelText('횟수');
 
-  for (let i = 0; i < 3; i += 1) {
-    await user.clear(weightInputs[i]);
-    await user.type(weightInputs[i], String(20 + i * 5));
-    await user.clear(repsInputs[i]);
-    await user.type(repsInputs[i], String(12 - i));
-  }
+  await user.clear(weightInputs[setIndex]);
+  await user.type(weightInputs[setIndex], weight);
+  await user.clear(repsInputs[setIndex]);
+  await user.type(repsInputs[setIndex], reps);
 };
 
 describe('ExerciseDetail', () => {
@@ -57,6 +60,13 @@ describe('ExerciseDetail', () => {
     expect(screen.getByText('완료')).toBeInTheDocument();
   });
 
+  it('횟수 라벨은 reps 표기 없이 출력된다', () => {
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    expect(screen.getAllByText('횟수')).toHaveLength(3);
+    expect(screen.queryByText('횟수(reps)')).not.toBeInTheDocument();
+  });
+
   it('유산소 운동 상세 입력 화면이 렌더링된다', () => {
     renderWithRoute('/exercise-detail/cardio/treadmill');
 
@@ -71,40 +81,67 @@ describe('ExerciseDetail', () => {
     expect(screen.getByText('운동을 찾을 수 없습니다')).toBeInTheDocument();
   });
 
-  it('근력 운동에서 완료 클릭 시 세트별 정보가 저장되고 제목 화면으로 이동한다', async () => {
+  it('1세트 입력 시 미입력 세트는 자동 채움되어 저장된다', async () => {
     const user = userEvent.setup();
     renderWithRoute('/exercise-detail/chest/bench-press');
 
-    await fillStrengthInputs(user);
+    await fillSetInput(user, 0, '20', '10');
     await user.click(screen.getByText('완료'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/routine-title');
 
     const draft = getTempRoutineData();
     expect(draft).toHaveLength(1);
-    expect(draft[0]).toEqual(
-      expect.objectContaining({
-        exerciseId: 'bench-press',
-        exerciseName: '벤치프레스',
-        sets: 3,
-        setDetails: [
-          { setNumber: 1, weight: 20, reps: 12 },
-          { setNumber: 2, weight: 25, reps: 11 },
-          { setNumber: 3, weight: 30, reps: 10 }
-        ]
-      })
-    );
+    expect(draft[0].setDetails).toEqual([
+      { setNumber: 1, weight: 20, reps: 10 },
+      { setNumber: 2, weight: 20, reps: 10 },
+      { setNumber: 3, weight: 20, reps: 10 }
+    ]);
+  });
+
+  it('이미 입력된 세트 값은 자동 채움으로 덮어쓰지 않는다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await fillSetInput(user, 1, '30', '8');
+    await fillSetInput(user, 0, '20', '10');
+    await user.click(screen.getByText('완료'));
+
+    const draft = getTempRoutineData();
+    expect(draft).toHaveLength(1);
+    expect(draft[0].setDetails).toEqual([
+      { setNumber: 1, weight: 20, reps: 10 },
+      { setNumber: 2, weight: 30, reps: 8 },
+      { setNumber: 3, weight: 20, reps: 10 }
+    ]);
   });
 
   it('근력 운동에서 운동 더 추가 클릭 시 선택 화면으로 이동한다', async () => {
     const user = userEvent.setup();
     renderWithRoute('/exercise-detail/chest/bench-press');
 
-    await fillStrengthInputs(user);
+    await fillSetInput(user, 0, '20', '10');
     await user.click(screen.getByText('운동 더 추가'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/exercise-selection/chest');
     expect(getTempRoutineData()).toHaveLength(1);
+  });
+
+  it('중량/횟수 증감 버튼이 동작한다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await user.click(screen.getByRole('button', { name: '1세트 중량 증가' }));
+    await user.click(screen.getByRole('button', { name: '1세트 횟수 증가' }));
+    await user.click(screen.getByText('완료'));
+
+    const draft = getTempRoutineData();
+    expect(draft).toHaveLength(1);
+    expect(draft[0].setDetails).toEqual([
+      { setNumber: 1, weight: 5, reps: 1 },
+      { setNumber: 2, weight: 5, reps: 1 },
+      { setNumber: 3, weight: 5, reps: 1 }
+    ]);
   });
 
   it('입력이 비어 있으면 완료 버튼이 비활성화된다', () => {

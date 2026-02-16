@@ -19,6 +19,7 @@ const setRange: FormConfig['sets'] = { min: 1, max: 10, step: 1, default: 3 };
 
 const mockOnSetCountChange = jest.fn();
 const mockOnStrengthSetChange = jest.fn();
+const mockOnStrengthSetStepChange = jest.fn();
 const mockOnDurationInputChange = jest.fn();
 const mockOnAddExercise = jest.fn();
 const mockOnCompleteRoutine = jest.fn();
@@ -27,9 +28,9 @@ const defaultProps = {
   setCount: 3,
   setRange,
   strengthSets: [
-    { setNumber: 1, weightInput: '', repsInput: '10' },
-    { setNumber: 2, weightInput: '20', repsInput: '10' },
-    { setNumber: 3, weightInput: '20', repsInput: '10' }
+    { setNumber: 1, weightInput: undefined, repsInput: undefined, weightTouched: false, repsTouched: false },
+    { setNumber: 2, weightInput: undefined, repsInput: undefined, weightTouched: false, repsTouched: false },
+    { setNumber: 3, weightInput: undefined, repsInput: undefined, weightTouched: false, repsTouched: false }
   ],
   strengthErrors: {},
   durationInput: '30',
@@ -37,6 +38,7 @@ const defaultProps = {
   isFormValid: true,
   onSetCountChange: mockOnSetCountChange,
   onStrengthSetChange: mockOnStrengthSetChange,
+  onStrengthSetStepChange: mockOnStrengthSetStepChange,
   onDurationInputChange: mockOnDurationInputChange,
   onAddExercise: mockOnAddExercise,
   onCompleteRoutine: mockOnCompleteRoutine
@@ -55,6 +57,13 @@ describe('ExerciseDetailView', () => {
     expect(screen.getByTestId('strength-set-row-3')).toBeInTheDocument();
   });
 
+  it('횟수 라벨은 reps 표기 없이 출력된다', () => {
+    render(<ExerciseDetailView {...defaultProps} exercise={mockExercise} isCardio={false} />);
+
+    expect(screen.getAllByText('횟수')).toHaveLength(3);
+    expect(screen.queryByText('횟수(reps)')).not.toBeInTheDocument();
+  });
+
   it('세트 수 증가/감소 버튼 클릭 시 콜백이 호출된다', async () => {
     const user = userEvent.setup();
     render(<ExerciseDetailView {...defaultProps} exercise={mockExercise} isCardio={false} />);
@@ -66,16 +75,29 @@ describe('ExerciseDetailView', () => {
     expect(mockOnSetCountChange).toHaveBeenCalledWith(2);
   });
 
-  it('세트 입력값 변경 시 콜백이 호출된다', async () => {
+  it('중량/횟수 증감 버튼 클릭 시 step 콜백이 호출된다', async () => {
+    const user = userEvent.setup();
+    render(<ExerciseDetailView {...defaultProps} exercise={mockExercise} isCardio={false} />);
+
+    await user.click(screen.getByRole('button', { name: '1세트 중량 증가' }));
+    await user.click(screen.getByRole('button', { name: '1세트 중량 감소' }));
+    await user.click(screen.getByRole('button', { name: '1세트 횟수 증가' }));
+    await user.click(screen.getByRole('button', { name: '1세트 횟수 감소' }));
+
+    expect(mockOnStrengthSetStepChange).toHaveBeenCalledWith(1, 'weight', 5);
+    expect(mockOnStrengthSetStepChange).toHaveBeenCalledWith(1, 'weight', -5);
+    expect(mockOnStrengthSetStepChange).toHaveBeenCalledWith(1, 'reps', 1);
+    expect(mockOnStrengthSetStepChange).toHaveBeenCalledWith(1, 'reps', -1);
+  });
+
+  it('직접 입력 시 change 콜백이 호출된다', async () => {
     const user = userEvent.setup();
     render(<ExerciseDetailView {...defaultProps} exercise={mockExercise} isCardio={false} />);
 
     const firstWeightInput = screen.getAllByLabelText('중량(kg)')[0];
-    await user.clear(firstWeightInput);
-    await user.type(firstWeightInput, '35');
+    await user.type(firstWeightInput, '25');
 
-    expect(mockOnStrengthSetChange).toHaveBeenCalledWith(1, 'weightInput', '3');
-    expect(mockOnStrengthSetChange).toHaveBeenCalledWith(1, 'weightInput', '5');
+    expect(mockOnStrengthSetChange).toHaveBeenCalled();
   });
 
   it('유산소 운동일 때 시간 입력만 렌더링된다', () => {

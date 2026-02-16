@@ -2,8 +2,10 @@ import { Exercise, FormConfig } from '../../types/exercise';
 
 interface StrengthSetInput {
   setNumber: number;
-  weightInput: string;
-  repsInput: string;
+  weightInput?: string;
+  repsInput?: string;
+  weightTouched: boolean;
+  repsTouched: boolean;
 }
 
 interface ExerciseDetailViewProps {
@@ -17,11 +19,20 @@ interface ExerciseDetailViewProps {
   durationError?: string;
   isFormValid: boolean;
   onSetCountChange: (sets: number) => void;
-  onStrengthSetChange: (setNumber: number, field: 'weightInput' | 'repsInput', value: string) => void;
+  onStrengthSetChange: (setNumber: number, field: 'weight' | 'reps', value: string) => void;
+  onStrengthSetStepChange: (setNumber: number, field: 'weight' | 'reps', delta: number) => void;
   onDurationInputChange: (value: string) => void;
   onAddExercise: () => void;
   onCompleteRoutine: () => void;
 }
+
+const getDisplayValue = (value: string | undefined, touched: boolean): string => {
+  if (touched) {
+    return value ?? '';
+  }
+
+  return value ?? '0';
+};
 
 export function ExerciseDetailView({
   exercise,
@@ -35,6 +46,7 @@ export function ExerciseDetailView({
   isFormValid,
   onSetCountChange,
   onStrengthSetChange,
+  onStrengthSetStepChange,
   onDurationInputChange,
   onAddExercise,
   onCompleteRoutine
@@ -93,30 +105,64 @@ export function ExerciseDetailView({
                       <label htmlFor={`weight-input-${set.setNumber}`} className="mb-2 block text-xs text-gray-400">
                         중량(kg)
                       </label>
-                      <input
-                        id={`weight-input-${set.setNumber}`}
-                        inputMode="numeric"
-                        value={set.weightInput}
-                        onChange={(event) =>
-                          onStrengthSetChange(set.setNumber, 'weightInput', event.target.value)
-                        }
-                        className="w-full rounded-xl border border-gray-600 bg-gray-900 px-3 py-3 text-lg font-semibold text-white outline-none focus:border-cyan-400"
-                        placeholder="0"
-                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label={`${set.setNumber}세트 중량 감소`}
+                          onClick={() => onStrengthSetStepChange(set.setNumber, 'weight', -5)}
+                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                        >
+                          -
+                        </button>
+                        <input
+                          id={`weight-input-${set.setNumber}`}
+                          aria-label="중량(kg)"
+                          inputMode="numeric"
+                          value={getDisplayValue(set.weightInput, set.weightTouched)}
+                          onChange={(event) => onStrengthSetChange(set.setNumber, 'weight', event.target.value)}
+                          className="w-full rounded-lg border border-gray-600 bg-gray-900 px-2 py-2 text-sm font-semibold text-white outline-none focus:border-cyan-400"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`${set.setNumber}세트 중량 증가`}
+                          onClick={() => onStrengthSetStepChange(set.setNumber, 'weight', 5)}
+                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                        >
+                          +
+                        </button>
+                      </div>
                       {error?.weight && <p className="mt-2 text-xs text-rose-400">{error.weight}</p>}
                     </div>
                     <div>
                       <label htmlFor={`reps-input-${set.setNumber}`} className="mb-2 block text-xs text-gray-400">
-                        횟수(reps)
+                        횟수
                       </label>
-                      <input
-                        id={`reps-input-${set.setNumber}`}
-                        inputMode="numeric"
-                        value={set.repsInput}
-                        onChange={(event) => onStrengthSetChange(set.setNumber, 'repsInput', event.target.value)}
-                        className="w-full rounded-xl border border-gray-600 bg-gray-900 px-3 py-3 text-lg font-semibold text-white outline-none focus:border-cyan-400"
-                        placeholder="0"
-                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label={`${set.setNumber}세트 횟수 감소`}
+                          onClick={() => onStrengthSetStepChange(set.setNumber, 'reps', -1)}
+                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                        >
+                          -
+                        </button>
+                        <input
+                          id={`reps-input-${set.setNumber}`}
+                          aria-label="횟수"
+                          inputMode="numeric"
+                          value={getDisplayValue(set.repsInput, set.repsTouched)}
+                          onChange={(event) => onStrengthSetChange(set.setNumber, 'reps', event.target.value)}
+                          className="w-full rounded-lg border border-gray-600 bg-gray-900 px-2 py-2 text-sm font-semibold text-white outline-none focus:border-cyan-400"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`${set.setNumber}세트 횟수 증가`}
+                          onClick={() => onStrengthSetStepChange(set.setNumber, 'reps', 1)}
+                          className="h-8 w-8 rounded-md bg-gray-700 text-sm font-bold text-white transition-colors hover:bg-gray-600"
+                        >
+                          +
+                        </button>
+                      </div>
                       {error?.reps && <p className="mt-2 text-xs text-rose-400">{error.reps}</p>}
                     </div>
                   </div>

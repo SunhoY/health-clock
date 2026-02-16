@@ -6,8 +6,10 @@ import { appendTempRoutineData } from '../routine-title/RoutineTitle';
 
 interface StrengthSetInput {
   setNumber: number;
-  weightInput: string;
-  repsInput: string;
+  weightInput?: string;
+  repsInput?: string;
+  weightTouched: boolean;
+  repsTouched: boolean;
 }
 
 const createStrengthSets = (count: number, previous: StrengthSetInput[] = []): StrengthSetInput[] => {
@@ -17,14 +19,25 @@ const createStrengthSets = (count: number, previous: StrengthSetInput[] = []): S
 
     return {
       setNumber,
-      weightInput: existing?.weightInput ?? '',
-      repsInput: existing?.repsInput ?? ''
+      weightInput: existing?.weightInput,
+      repsInput: existing?.repsInput,
+      weightTouched: existing?.weightTouched ?? false,
+      repsTouched: existing?.repsTouched ?? false
     };
   });
 };
 
-const parsePositiveInt = (value: string): number | undefined => {
-  if (!value.trim()) {
+const normalizeNumberInput = (value: string): string | undefined => {
+  if (!/^\d*$/.test(value)) {
+    return undefined;
+  }
+
+  const trimmed = value.replace(/^0+/, '');
+  return trimmed === '' ? undefined : trimmed;
+};
+
+const parsePositiveInt = (value?: string): number | undefined => {
+  if (!value) {
     return undefined;
   }
 
@@ -34,6 +47,36 @@ const parsePositiveInt = (value: string): number | undefined => {
   }
 
   return parsed;
+};
+
+const updateStrengthField = (
+  prev: StrengthSetInput[],
+  setNumber: number,
+  field: 'weight' | 'reps',
+  nextValue?: string,
+  markTouched = true
+): StrengthSetInput[] => {
+  const inputKey = field === 'weight' ? 'weightInput' : 'repsInput';
+  const touchedKey = field === 'weight' ? 'weightTouched' : 'repsTouched';
+
+  return prev.map((set) => {
+    if (set.setNumber === setNumber) {
+      return {
+        ...set,
+        [inputKey]: nextValue,
+        [touchedKey]: markTouched ? true : set[touchedKey]
+      };
+    }
+
+    if (nextValue !== undefined && !set[touchedKey]) {
+      return {
+        ...set,
+        [inputKey]: nextValue
+      };
+    }
+
+    return set;
+  });
 };
 
 export function ExerciseDetail() {
@@ -121,16 +164,35 @@ export function ExerciseDetail() {
 
   const handleStrengthSetChange = (
     setNumber: number,
-    field: 'weightInput' | 'repsInput',
+    field: 'weight' | 'reps',
     value: string
   ) => {
     if (!/^\d*$/.test(value)) {
       return;
     }
 
-    setStrengthSets((prev) =>
-      prev.map((set) => (set.setNumber === setNumber ? { ...set, [field]: value } : set))
-    );
+    const normalized = normalizeNumberInput(value);
+    setStrengthSets((prev) => updateStrengthField(prev, setNumber, field, normalized, true));
+  };
+
+  const handleStrengthSetStepChange = (
+    setNumber: number,
+    field: 'weight' | 'reps',
+    delta: number
+  ) => {
+    setStrengthSets((prev) => {
+      const target = prev.find((set) => set.setNumber === setNumber);
+      if (!target) {
+        return prev;
+      }
+
+      const inputValue = field === 'weight' ? target.weightInput : target.repsInput;
+      const currentValue = parsePositiveInt(inputValue) ?? 0;
+      const nextValue = Math.max(0, currentValue + delta);
+      const normalized = nextValue > 0 ? String(nextValue) : undefined;
+
+      return updateStrengthField(prev, setNumber, field, normalized, true);
+    });
   };
 
   const buildExerciseDetail = (): ExerciseDetailModel | null => {
@@ -217,6 +279,7 @@ export function ExerciseDetail() {
       isFormValid={isFormValid}
       onSetCountChange={handleSetCountChange}
       onStrengthSetChange={handleStrengthSetChange}
+      onStrengthSetStepChange={handleStrengthSetStepChange}
       onDurationInputChange={setDurationInput}
       onAddExercise={() => saveCurrentExercise('add')}
       onCompleteRoutine={() => saveCurrentExercise('complete')}
