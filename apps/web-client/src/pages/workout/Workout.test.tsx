@@ -197,7 +197,7 @@ describe('Workout', () => {
     expect(screen.getByText('스쿼트')).toBeInTheDocument();
     expect(screen.getByText('40kg')).toBeInTheDocument();
     expect(screen.getByText('12회')).toBeInTheDocument();
-    expect(screen.getByText('휴식 스톱워치')).toBeInTheDocument();
+    expect(screen.getByText('지난 운동이 끝난지')).toBeInTheDocument();
     expect(screen.getByText('00:00')).toBeInTheDocument();
     expect(screen.getByText('다음 운동 시작')).toBeInTheDocument();
   });

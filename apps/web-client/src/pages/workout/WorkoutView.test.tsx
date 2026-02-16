@@ -158,7 +158,7 @@ describe('WorkoutView', () => {
     expect(screen.getByText('스쿼트')).toBeInTheDocument();
     expect(screen.getByText('40kg')).toBeInTheDocument();
     expect(screen.getByText('12회')).toBeInTheDocument();
-    expect(screen.getByText('휴식 스톱워치')).toBeInTheDocument();
+    expect(screen.getByText('지난 운동이 끝난지')).toBeInTheDocument();
     expect(screen.getByText('01:15')).toBeInTheDocument();
     expect(screen.getByText('다음 운동 시작')).toBeInTheDocument();
     expect(screen.queryByText('세트 완료')).not.toBeInTheDocument();

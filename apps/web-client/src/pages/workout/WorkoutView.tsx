@@ -172,7 +172,7 @@ export function WorkoutView({
               </section>
 
               <section className="space-y-2" data-testid="transition-stopwatch">
-                <p className="text-sm text-slate-400">휴식 스톱워치</p>
+                <p className="text-sm text-slate-400">지난 운동이 끝난지</p>
                 <p className="text-4xl font-bold tabular-nums text-slate-100 sm:text-5xl">
                   {formatTime(viewModel.transitionElapsedSeconds ?? 0)}
                 </p>
