@@ -26,7 +26,6 @@ const mockViewModel: WorkoutDetailSummaryViewModel = {
 };
 
 const mockHandlers = {
-  onGoBack: jest.fn(),
   onGoHome: jest.fn(),
 };
 
@@ -84,18 +83,6 @@ describe('WorkoutSummaryView', () => {
     expect(screen.queryByTestId('section-lower')).not.toBeInTheDocument();
   });
 
-  it('뒤로가기 버튼 클릭 시 핸들러가 호출된다', () => {
-    render(
-      <WorkoutSummaryView
-        viewModel={mockViewModel}
-        {...mockHandlers}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '뒤로가기' }));
-    expect(mockHandlers.onGoBack).toHaveBeenCalledTimes(1);
-  });
-
   it('홈으로 버튼 클릭 시 핸들러가 호출된다', () => {
     render(
       <WorkoutSummaryView
@@ -106,5 +93,16 @@ describe('WorkoutSummaryView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '홈으로' }));
     expect(mockHandlers.onGoHome).toHaveBeenCalledTimes(1);
+  });
+
+  it('뒤로가기 버튼은 표시되지 않는다', () => {
+    render(
+      <WorkoutSummaryView
+        viewModel={mockViewModel}
+        {...mockHandlers}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: '뒤로가기' })).not.toBeInTheDocument();
   });
 });

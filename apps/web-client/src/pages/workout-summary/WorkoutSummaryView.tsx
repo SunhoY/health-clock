@@ -2,7 +2,6 @@ import { WorkoutDetailSummaryViewModel } from '../../types/exercise';
 
 interface WorkoutSummaryViewProps {
   viewModel: WorkoutDetailSummaryViewModel;
-  onGoBack: () => void;
   onGoHome: () => void;
 }
 
@@ -15,28 +14,13 @@ const bodyPartLabelMap: Record<string, string> = {
 
 export const WorkoutSummaryView = ({
   viewModel,
-  onGoBack,
   onGoHome,
 }: WorkoutSummaryViewProps) => {
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="max-w-2xl mx-auto px-6 pt-6 pb-32">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-emerald-300">운동 상세 요약</h1>
-          <div className="space-x-3">
-            <button
-              onClick={onGoBack}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
-            >
-              뒤로가기
-            </button>
-            <button
-              onClick={onGoHome}
-              className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-lg font-semibold transition-colors duration-200"
-            >
-              홈으로
-            </button>
-          </div>
         </div>
 
         <section className="bg-gray-800 rounded-2xl p-6" data-testid="today-body-parts">
@@ -53,7 +37,7 @@ export const WorkoutSummaryView = ({
           </div>
         </section>
 
-        <div className="space-y-4">
+        <div className="mt-4 space-y-4">
           {viewModel.sections.map((section) => (
             <section
               key={section.bodyPart}
@@ -81,6 +65,17 @@ export const WorkoutSummaryView = ({
               )}
             </section>
           ))}
+        </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-800 bg-gray-900/95 backdrop-blur">
+        <div className="max-w-2xl mx-auto px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+          <button
+            onClick={onGoHome}
+            className="w-full rounded-2xl bg-emerald-500 px-6 py-4 text-lg font-semibold text-slate-950 transition-colors hover:bg-emerald-600"
+          >
+            홈으로
+          </button>
         </div>
       </div>
     </div>

@@ -137,10 +137,6 @@ export const WorkoutSummary = ({ targetDate }: WorkoutSummaryProps) => {
     setLoading(false);
   }, [targetDate]);
 
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
   const handleGoHome = () => {
     navigate('/');
   };
@@ -170,7 +166,6 @@ export const WorkoutSummary = ({ targetDate }: WorkoutSummaryProps) => {
   return (
     <WorkoutSummaryView
       viewModel={viewModel}
-      onGoBack={handleGoBack}
       onGoHome={handleGoHome}
     />
   );

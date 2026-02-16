@@ -9,7 +9,6 @@ const meta: Meta<typeof WorkoutSummaryView> = {
     layout: 'fullscreen',
   },
   argTypes: {
-    onGoBack: { action: 'go back clicked' },
     onGoHome: { action: 'go home clicked' },
   },
 };

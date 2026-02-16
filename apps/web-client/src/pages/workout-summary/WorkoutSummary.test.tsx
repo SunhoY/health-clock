@@ -109,21 +109,6 @@ describe('WorkoutSummary', () => {
     expect(screen.getByTestId('section-upper')).toHaveTextContent('70kg');
   });
 
-  it('뒤로가기 버튼 클릭 시 이전 페이지로 이동한다', async () => {
-    setTempWorkoutSessions([mockCompletionData]);
-
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    await new Promise(resolve => setTimeout(resolve, 50));
-
-    fireEvent.click(screen.getByRole('button', { name: '뒤로가기' }));
-    expect(mockNavigate).toHaveBeenCalledWith(-1);
-  });
-
   it('홈으로 버튼 클릭 시 홈 페이지로 이동한다', async () => {
     setTempWorkoutSessions([mockCompletionData]);
 
@@ -137,5 +122,19 @@ describe('WorkoutSummary', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '홈으로' }));
     expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
+
+  it('뒤로가기 버튼은 표시되지 않는다', async () => {
+    setTempWorkoutSessions([mockCompletionData]);
+
+    render(
+      <MemoryRouter>
+        <WorkoutSummary />
+      </MemoryRouter>
+    );
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(screen.queryByRole('button', { name: '뒤로가기' })).not.toBeInTheDocument();
   });
 });
