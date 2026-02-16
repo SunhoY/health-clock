@@ -9,13 +9,10 @@ beforeEach(() => {
 });
 
 describe('HomeView (Landing)', () => {
-  it('랜딩 핵심 요소(타이틀, 설명, 주요 CTA)가 렌더링된다', () => {
+  it('랜딩 핵심 요소(타이틀, 주요 CTA)가 렌더링된다', () => {
     render(<HomeView onStartWorkout={mockOnStartWorkout} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Health Clock' })).toBeInTheDocument();
-    expect(
-      screen.getByText('건강한 라이프스타일을 위한 운동 루틴을 시작해보세요')
-    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /운동 시작/i })).toBeInTheDocument();
   });
 
@@ -29,6 +26,13 @@ describe('HomeView (Landing)', () => {
     expect(mockOnStartWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it.todo('보조 CTA(예: 최근 루틴/기능 소개)가 제공된다');
-  it.todo('모바일 뷰포트에서도 랜딩 핵심 요소의 정보 우선순위가 유지된다');
+  it('모바일 기준 CTA가 하단 고정 스타일을 가진다', () => {
+    render(<HomeView onStartWorkout={mockOnStartWorkout} />);
+
+    const button = screen.getByRole('button', { name: /운동 시작/i });
+    expect(button.className).toContain('fixed');
+    expect(button).toHaveStyle(
+      'bottom: max(1.75rem, calc(env(safe-area-inset-bottom) + 0.75rem))'
+    );
+  });
 });

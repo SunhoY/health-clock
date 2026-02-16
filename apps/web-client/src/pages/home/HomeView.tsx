@@ -4,21 +4,30 @@ interface HomeViewProps {
 
 export const HomeView = ({ onStartWorkout }: HomeViewProps) => {
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
-      <div className="text-center space-y-8">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Health Clock
-        </h1>
-        <p className="text-gray-300 text-lg mb-8">
-          건강한 라이프스타일을 위한 운동 루틴을 시작해보세요
-        </p>
-        <button
-          onClick={onStartWorkout}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
-        >
-          운동 시작하기
-        </button>
+    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 15% 20%, rgba(56,189,248,0.18), transparent 30%), radial-gradient(circle at 85% 80%, rgba(14,165,233,0.16), transparent 35%)',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-6 pb-28 pt-16 sm:px-10 sm:pb-16">
+        <section className="w-full max-w-3xl text-center">
+          <h1 className="text-5xl font-black tracking-tight text-white sm:text-7xl">
+            Health Clock
+          </h1>
+          <button
+            onClick={onStartWorkout}
+            className="fixed inset-x-6 z-10 rounded-full bg-cyan-400 px-9 py-4 text-lg font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950 sm:static sm:inset-auto sm:bottom-auto sm:mt-12"
+            style={{ bottom: 'max(1.75rem, calc(env(safe-area-inset-bottom) + 0.75rem))' }}
+          >
+            운동 시작하기
+          </button>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
