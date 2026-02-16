@@ -11,9 +11,6 @@ const meta: Meta<typeof WorkoutView> = {
   argTypes: {
     onCompleteSet: { action: 'complete set clicked' },
     onSkipRest: { action: 'skip rest clicked' },
-    onPauseWorkout: { action: 'pause workout clicked' },
-    onResumeWorkout: { action: 'resume workout clicked' },
-    onAbandonWorkout: { action: 'abandon workout clicked' },
   },
   tags: ['autodocs'],
 };
@@ -110,14 +107,3 @@ export const CardioExercise: Story = {
     isResting: false,
   },
 };
-
-export const PausedWorkout: Story = {
-  args: {
-    progress: baseProgress,
-    timerState: {
-      ...baseTimerState,
-      isPaused: true
-    },
-    isResting: false,
-  },
-}; 

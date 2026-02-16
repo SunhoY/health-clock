@@ -211,49 +211,6 @@ export function Workout() {
     setIsResting(false);
   }, []);
 
-  // 운동 일시정지
-  const handlePauseWorkout = useCallback(() => {
-    setSession(prev => ({
-      ...prev,
-      status: 'paused',
-      pausedTime: Date.now()
-    }));
-    setTimerState(prev => ({
-      ...prev,
-      isRunning: false,
-      isPaused: true
-    }));
-    console.log('운동 일시정지');
-  }, []);
-
-  // 운동 재개
-  const handleResumeWorkout = useCallback(() => {
-    setSession(prev => ({
-      ...prev,
-      status: 'active'
-    }));
-    setTimerState(prev => ({
-      ...prev,
-      isRunning: true,
-      isPaused: false
-    }));
-    console.log('운동 재개');
-  }, []);
-
-  // 운동 중단
-  const handleAbandonWorkout = useCallback(() => {
-    setSession(prev => ({
-      ...prev,
-      status: 'abandoned'
-    }));
-    console.log('운동 중단:', {
-      sessionId: session.id,
-      completedSets: session.completedSets,
-      totalTime: Date.now() - session.startTime.getTime()
-    });
-    navigate('/preset-selection');
-  }, [session, navigate]);
-
   if (!currentExercise) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -274,9 +231,6 @@ export function Workout() {
       isResting={isResting}
       onCompleteSet={handleCompleteSet}
       onSkipRest={handleSkipRest}
-      onPauseWorkout={handlePauseWorkout}
-      onResumeWorkout={handleResumeWorkout}
-      onAbandonWorkout={handleAbandonWorkout}
     />
   );
 }
