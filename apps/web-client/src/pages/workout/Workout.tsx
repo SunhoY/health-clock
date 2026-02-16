@@ -19,6 +19,12 @@ interface WorkoutRouteState {
   exercises?: ExerciseDetail[];
 }
 
+interface BetweenExerciseState {
+  isActive: boolean;
+  completedExerciseName?: string;
+  elapsedSeconds: number;
+}
+
 export function Workout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,6 +51,10 @@ export function Workout() {
   });
 
   const [isResting, setIsResting] = useState(false);
+  const [betweenExerciseState, setBetweenExerciseState] = useState<BetweenExerciseState>({
+    isActive: false,
+    elapsedSeconds: 0
+  });
 
   // 현재 운동 정보 계산
   const currentExercise = session.exercises[session.currentExerciseIndex];
@@ -114,6 +124,23 @@ export function Workout() {
     };
   }, [timerState.isRunning, timerState.timeRemaining]);
 
+  useEffect(() => {
+    if (!betweenExerciseState.isActive) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setBetweenExerciseState(prev => ({
+        ...prev,
+        elapsedSeconds: prev.elapsedSeconds + 1
+      }));
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [betweenExerciseState.isActive]);
+
   // 세트 완료 처리
   const handleCompleteSet = useCallback(() => {
     if (!currentExercise) return;
@@ -154,10 +181,20 @@ export function Workout() {
       if (session.currentExerciseIndex < totalExercises - 1) {
         setSession(prev => ({
           ...prev,
-          currentExerciseIndex: prev.currentExerciseIndex + 1,
-          currentSet: 1,
           completedSets: newCompletedSets
         }));
+        setBetweenExerciseState({
+          isActive: true,
+          completedExerciseName: currentExercise.exerciseName,
+          elapsedSeconds: 0
+        });
+        setTimerState({
+          isRunning: false,
+          timeRemaining: 0,
+          totalTime: 0,
+          isPaused: false
+        });
+        setIsResting(false);
       } else {
         // 모든 운동 완료
         setSession(prev => ({
@@ -213,6 +250,22 @@ export function Workout() {
     setIsResting(false);
   }, []);
 
+  const handleStartNextExercise = useCallback(() => {
+    if (!betweenExerciseState.isActive) {
+      return;
+    }
+
+    setSession(prev => ({
+      ...prev,
+      currentExerciseIndex: prev.currentExerciseIndex + 1,
+      currentSet: 1
+    }));
+    setBetweenExerciseState({
+      isActive: false,
+      elapsedSeconds: 0
+    });
+  }, [betweenExerciseState.isActive]);
+
   if (!currentExercise) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -227,6 +280,9 @@ export function Workout() {
   const progress = calculateProgress();
   const lastCompletedSet = session.completedSets.at(-1);
   const isShowingPreviousSet = isResting && lastCompletedSet?.exerciseId === progress.currentExercise.exerciseId;
+  const nextExercise = betweenExerciseState.isActive
+    ? session.exercises[session.currentExerciseIndex + 1]
+    : undefined;
 
   const viewModel: WorkoutViewModel = {
     exerciseName: progress.currentExercise.exerciseName,
@@ -245,7 +301,15 @@ export function Workout() {
     nextSetLabel: isResting ? `다음 ${progress.currentSet} / ${progress.totalSets} 세트` : undefined,
     nextWeight: isResting ? progress.currentExercise.weight : undefined,
     nextReps: isResting ? progress.currentExercise.reps : undefined,
-    nextDuration: isResting ? progress.currentExercise.duration : undefined
+    nextDuration: isResting ? progress.currentExercise.duration : undefined,
+    transitionCompletedExerciseName: betweenExerciseState.isActive
+      ? `${betweenExerciseState.completedExerciseName ?? progress.currentExercise.exerciseName} 완료`
+      : undefined,
+    transitionNextExerciseName: betweenExerciseState.isActive ? nextExercise?.exerciseName : undefined,
+    transitionNextWeight: betweenExerciseState.isActive ? nextExercise?.weight : undefined,
+    transitionNextReps: betweenExerciseState.isActive ? nextExercise?.reps : undefined,
+    transitionNextDuration: betweenExerciseState.isActive ? nextExercise?.duration : undefined,
+    transitionElapsedSeconds: betweenExerciseState.isActive ? betweenExerciseState.elapsedSeconds : undefined
   };
 
   return (
@@ -253,8 +317,10 @@ export function Workout() {
       viewModel={viewModel}
       timerState={timerState}
       isResting={isResting}
+      isBetweenExercises={betweenExerciseState.isActive}
       onCompleteSet={handleCompleteSet}
       onSkipRest={handleSkipRest}
+      onStartNextExercise={handleStartNextExercise}
     />
   );
 }

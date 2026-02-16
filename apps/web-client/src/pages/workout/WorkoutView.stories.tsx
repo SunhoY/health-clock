@@ -11,6 +11,7 @@ const meta: Meta<typeof WorkoutView> = {
   argTypes: {
     onCompleteSet: { action: 'complete set clicked' },
     onSkipRest: { action: 'skip rest clicked' },
+    onStartNextExercise: { action: 'start next exercise clicked' },
   },
   tags: ['autodocs'],
 };
@@ -21,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 const baseViewModel: WorkoutViewModel = {
   exerciseName: '벤치프레스',
   currentExerciseIndex: 0,
-  totalExercises: 1,
+  totalExercises: 2,
   currentSet: 1,
   totalSets: 3,
   percentComplete: 33.33,
@@ -41,6 +42,7 @@ export const ActiveSet: Story = {
     viewModel: baseViewModel,
     timerState: baseTimerState,
     isResting: false,
+    isBetweenExercises: false,
   },
 };
 
@@ -58,31 +60,23 @@ export const RestPeriod: Story = {
     },
     timerState: baseTimerState,
     isResting: true,
+    isBetweenExercises: false,
   },
 };
 
-export const FirstSet: Story = {
+export const ExerciseTransition: Story = {
   args: {
     viewModel: {
       ...baseViewModel,
-      currentSet: 1,
-      percentComplete: 0,
+      transitionCompletedExerciseName: '푸시업 완료',
+      transitionNextExerciseName: '스쿼트',
+      transitionNextWeight: 40,
+      transitionNextReps: 12,
+      transitionElapsedSeconds: 42,
     },
     timerState: baseTimerState,
     isResting: false,
-  },
-};
-
-export const LastSet: Story = {
-  args: {
-    viewModel: {
-      ...baseViewModel,
-      currentSet: 3,
-      totalSets: 3,
-      percentComplete: 66.67,
-    },
-    timerState: baseTimerState,
-    isResting: false,
+    isBetweenExercises: true,
   },
 };
 
@@ -97,5 +91,6 @@ export const CardioExercise: Story = {
     },
     timerState: baseTimerState,
     isResting: false,
+    isBetweenExercises: false,
   },
 };

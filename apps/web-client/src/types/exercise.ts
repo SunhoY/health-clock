@@ -134,6 +134,12 @@ export interface WorkoutViewModel {
   nextWeight?: number;
   nextReps?: number;
   nextDuration?: number;
+  transitionCompletedExerciseName?: string;
+  transitionNextExerciseName?: string;
+  transitionNextWeight?: number;
+  transitionNextReps?: number;
+  transitionNextDuration?: number;
+  transitionElapsedSeconds?: number;
 }
 
 export const FORM_CONFIG: FormConfig = {

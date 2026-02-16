@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Workout, setTempWorkoutData } from './Workout';
@@ -28,6 +28,10 @@ describe('Workout', () => {
     mockNavigate.mockClear();
     mockLocationState = undefined;
     setTempWorkoutData([]);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   afterAll(() => {
@@ -158,6 +162,115 @@ describe('Workout', () => {
     expect(screen.getByText('다음 2 / 3 세트')).toHaveClass('text-emerald-300');
   });
 
+  it('운동 마지막 세트 완료 후 다음 운동 전환 화면이 표시된다', async () => {
+    const user = userEvent.setup();
+    const mockExercises: ExerciseDetail[] = [
+      {
+        exerciseId: 'push-up',
+        exerciseName: '푸시업',
+        bodyPart: 'chest',
+        sets: 1,
+        reps: 15,
+      },
+      {
+        exerciseId: 'squat',
+        exerciseName: '스쿼트',
+        bodyPart: 'legs',
+        sets: 2,
+        weight: 40,
+        reps: 12,
+      },
+    ];
+    setTempWorkoutData(mockExercises);
+
+    render(
+      <MemoryRouter>
+        <Workout />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByText('세트 완료'));
+
+    expect(screen.getByText('운동완료')).toBeInTheDocument();
+    expect(screen.getByText('푸시업 완료')).toBeInTheDocument();
+    expect(screen.getByText('다음 운동')).toBeInTheDocument();
+    expect(screen.getByText('스쿼트')).toBeInTheDocument();
+    expect(screen.getByText('40kg')).toBeInTheDocument();
+    expect(screen.getByText('12회')).toBeInTheDocument();
+    expect(screen.getByText('휴식 스톱워치')).toBeInTheDocument();
+    expect(screen.getByText('00:00')).toBeInTheDocument();
+    expect(screen.getByText('다음 운동 시작')).toBeInTheDocument();
+  });
+
+  it('운동 간 전환 화면에서 스톱워치가 증가한다', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const mockExercises: ExerciseDetail[] = [
+      {
+        exerciseId: 'push-up',
+        exerciseName: '푸시업',
+        bodyPart: 'chest',
+        sets: 1,
+      },
+      {
+        exerciseId: 'squat',
+        exerciseName: '스쿼트',
+        bodyPart: 'legs',
+        sets: 1,
+      },
+    ];
+    setTempWorkoutData(mockExercises);
+
+    render(
+      <MemoryRouter>
+        <Workout />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByText('세트 완료'));
+    expect(screen.getByText('00:00')).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(screen.getByText('00:02')).toBeInTheDocument();
+  });
+
+  it('다음 운동 시작 버튼 클릭 시 다음 운동 1세트로 이동한다', async () => {
+    const user = userEvent.setup();
+    const mockExercises: ExerciseDetail[] = [
+      {
+        exerciseId: 'push-up',
+        exerciseName: '푸시업',
+        bodyPart: 'chest',
+        sets: 1,
+      },
+      {
+        exerciseId: 'squat',
+        exerciseName: '스쿼트',
+        bodyPart: 'legs',
+        sets: 2,
+        weight: 40,
+      },
+    ];
+    setTempWorkoutData(mockExercises);
+
+    render(
+      <MemoryRouter>
+        <Workout />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByText('세트 완료'));
+    await user.click(screen.getByText('다음 운동 시작'));
+
+    expect(screen.getByText('스쿼트')).toBeInTheDocument();
+    expect(screen.getByText('1 / 2 세트')).toBeInTheDocument();
+    expect(screen.queryByText('운동완료')).not.toBeInTheDocument();
+    expect(screen.queryByText('다음 운동 시작')).not.toBeInTheDocument();
+  });
+
   it('휴식 건너뛰기 동작 후 다시 세트 완료 버튼이 표시된다', async () => {
     const user = userEvent.setup();
     const mockExercises: ExerciseDetail[] = [
@@ -250,6 +363,32 @@ describe('Workout', () => {
     );
 
     expect(screen.getByText('0% 완료')).toBeInTheDocument();
+  });
+
+  it('마지막 운동까지 완료하면 완료 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+    const mockExercises: ExerciseDetail[] = [
+      {
+        exerciseId: 'push-up',
+        exerciseName: '푸시업',
+        bodyPart: 'chest',
+        sets: 1,
+      },
+    ];
+    setTempWorkoutData(mockExercises);
+
+    render(
+      <MemoryRouter>
+        <Workout />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByText('세트 완료'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/workout-complete', {
+      state: { completionData: expect.any(Object) },
+    });
+    expect(screen.queryByText('다음 운동 시작')).not.toBeInTheDocument();
   });
 
   it('일시정지와 중단 버튼은 제공되지 않는다', () => {

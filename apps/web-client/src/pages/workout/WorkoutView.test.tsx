@@ -6,7 +6,7 @@ import { TimerState, WorkoutViewModel } from '../../types/exercise';
 const mockViewModel: WorkoutViewModel = {
   exerciseName: '벤치프레스',
   currentExerciseIndex: 0,
-  totalExercises: 1,
+  totalExercises: 2,
   currentSet: 1,
   totalSets: 3,
   percentComplete: 33.33,
@@ -23,6 +23,7 @@ const mockTimerState: TimerState = {
 
 const mockOnCompleteSet = jest.fn();
 const mockOnSkipRest = jest.fn();
+const mockOnStartNextExercise = jest.fn();
 
 describe('WorkoutView', () => {
   beforeEach(() => {
@@ -35,12 +36,14 @@ describe('WorkoutView', () => {
         viewModel={mockViewModel}
         timerState={mockTimerState}
         isResting={false}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 
-    expect(screen.getByText('운동 1 / 1')).toBeInTheDocument();
+    expect(screen.getByText('운동 1 / 2')).toBeInTheDocument();
     expect(screen.getByText('33% 완료')).toBeInTheDocument();
     expect(screen.getByText('벤치프레스')).toBeInTheDocument();
     expect(screen.getByText('1 / 3 세트')).toBeInTheDocument();
@@ -61,8 +64,10 @@ describe('WorkoutView', () => {
         viewModel={withoutMetrics}
         timerState={mockTimerState}
         isResting={false}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 
@@ -77,8 +82,10 @@ describe('WorkoutView', () => {
         viewModel={mockViewModel}
         timerState={mockTimerState}
         isResting={false}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 
@@ -103,8 +110,10 @@ describe('WorkoutView', () => {
         viewModel={restViewModel}
         timerState={mockTimerState}
         isResting={true}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 
@@ -121,6 +130,40 @@ describe('WorkoutView', () => {
     expect(screen.getByText('다음 2 / 3 세트')).toHaveClass('text-emerald-300');
   });
 
+  it('운동 간 전환 화면에서 완료/다음운동/스톱워치/버튼이 표시된다', () => {
+    const transitionViewModel: WorkoutViewModel = {
+      ...mockViewModel,
+      transitionCompletedExerciseName: '푸시업 완료',
+      transitionNextExerciseName: '스쿼트',
+      transitionNextWeight: 40,
+      transitionNextReps: 12,
+      transitionElapsedSeconds: 75,
+    };
+
+    render(
+      <WorkoutView
+        viewModel={transitionViewModel}
+        timerState={mockTimerState}
+        isResting={false}
+        isBetweenExercises={true}
+        onCompleteSet={mockOnCompleteSet}
+        onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
+      />
+    );
+
+    expect(screen.getByText('운동완료')).toBeInTheDocument();
+    expect(screen.getByText('푸시업 완료')).toBeInTheDocument();
+    expect(screen.getByText('다음 운동')).toBeInTheDocument();
+    expect(screen.getByText('스쿼트')).toBeInTheDocument();
+    expect(screen.getByText('40kg')).toBeInTheDocument();
+    expect(screen.getByText('12회')).toBeInTheDocument();
+    expect(screen.getByText('휴식 스톱워치')).toBeInTheDocument();
+    expect(screen.getByText('01:15')).toBeInTheDocument();
+    expect(screen.getByText('다음 운동 시작')).toBeInTheDocument();
+    expect(screen.queryByText('세트 완료')).not.toBeInTheDocument();
+  });
+
   it('세트 완료 버튼 클릭 시 콜백이 호출된다', async () => {
     const user = userEvent.setup();
     render(
@@ -128,8 +171,10 @@ describe('WorkoutView', () => {
         viewModel={mockViewModel}
         timerState={mockTimerState}
         isResting={false}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 
@@ -145,8 +190,10 @@ describe('WorkoutView', () => {
         viewModel={{ ...mockViewModel, nextSetLabel: '다음 2 / 3 세트' }}
         timerState={mockTimerState}
         isResting={true}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 
@@ -155,14 +202,40 @@ describe('WorkoutView', () => {
     expect(mockOnSkipRest).toHaveBeenCalled();
   });
 
+  it('다음 운동 시작 버튼 클릭 시 콜백이 호출된다', async () => {
+    const user = userEvent.setup();
+    render(
+      <WorkoutView
+        viewModel={{
+          ...mockViewModel,
+          transitionCompletedExerciseName: '푸시업 완료',
+          transitionNextExerciseName: '스쿼트',
+          transitionElapsedSeconds: 0,
+        }}
+        timerState={mockTimerState}
+        isResting={false}
+        isBetweenExercises={true}
+        onCompleteSet={mockOnCompleteSet}
+        onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
+      />
+    );
+
+    await user.click(screen.getByText('다음 운동 시작'));
+
+    expect(mockOnStartNextExercise).toHaveBeenCalled();
+  });
+
   it('일시정지와 중단 버튼이 표시되지 않는다', () => {
     render(
       <WorkoutView
         viewModel={mockViewModel}
         timerState={mockTimerState}
         isResting={false}
+        isBetweenExercises={false}
         onCompleteSet={mockOnCompleteSet}
         onSkipRest={mockOnSkipRest}
+        onStartNextExercise={mockOnStartNextExercise}
       />
     );
 

@@ -4,16 +4,20 @@ interface WorkoutViewProps {
   viewModel: WorkoutViewModel;
   timerState: TimerState;
   isResting: boolean;
+  isBetweenExercises: boolean;
   onCompleteSet: () => void;
   onSkipRest: () => void;
+  onStartNextExercise: () => void;
 }
 
 export function WorkoutView({
   viewModel,
   timerState,
   isResting,
+  isBetweenExercises,
   onCompleteSet,
-  onSkipRest
+  onSkipRest,
+  onStartNextExercise
 }: WorkoutViewProps) {
   const activeMetricTexts = [
     viewModel.weight !== undefined ? `${viewModel.weight}kg` : undefined,
@@ -31,6 +35,12 @@ export function WorkoutView({
     viewModel.nextWeight !== undefined ? `${viewModel.nextWeight}kg` : undefined,
     viewModel.nextReps !== undefined ? `${viewModel.nextReps}회` : undefined,
     viewModel.nextDuration !== undefined ? `${viewModel.nextDuration}분` : undefined
+  ].filter((value): value is string => value !== undefined);
+
+  const transitionMetricTexts = [
+    viewModel.transitionNextWeight !== undefined ? `${viewModel.transitionNextWeight}kg` : undefined,
+    viewModel.transitionNextReps !== undefined ? `${viewModel.transitionNextReps}회` : undefined,
+    viewModel.transitionNextDuration !== undefined ? `${viewModel.transitionNextDuration}분` : undefined
   ].filter((value): value is string => value !== undefined);
 
   const formatTime = (seconds: number): string => {
@@ -56,10 +66,13 @@ export function WorkoutView({
         </header>
 
         <main className="flex flex-1 flex-col items-center justify-center text-center">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            {viewModel.exerciseName}
-          </h1>
-          {!isResting && (
+          {!isBetweenExercises && (
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              {viewModel.exerciseName}
+            </h1>
+          )}
+
+          {!isResting && !isBetweenExercises && (
             <>
               <p className="mt-4 text-2xl font-medium text-cyan-200 sm:text-3xl">
                 {viewModel.currentSet} / {viewModel.totalSets} 세트
@@ -78,7 +91,8 @@ export function WorkoutView({
               )}
             </>
           )}
-          {isResting && (
+
+          {isResting && !isBetweenExercises && (
             <div className="mt-8 w-full">
               <p className="text-base text-slate-300">휴식 시간</p>
               <p className="mt-2 text-5xl font-bold tabular-nums sm:text-6xl">
@@ -128,10 +142,54 @@ export function WorkoutView({
               </div>
             </div>
           )}
+
+          {isBetweenExercises && (
+            <div className="mt-4 w-full space-y-8">
+              <section className="space-y-2" data-testid="transition-completed-info">
+                <p className="text-sm font-medium text-slate-500">운동완료</p>
+                <p className="text-base font-medium text-slate-500">
+                  {viewModel.transitionCompletedExerciseName ?? `${viewModel.exerciseName} 완료`}
+                </p>
+              </section>
+
+              <section className="space-y-3" data-testid="transition-next-info">
+                <p className="text-base font-medium text-emerald-300">다음 운동</p>
+                <p className="text-3xl font-semibold text-emerald-200 sm:text-4xl">
+                  {viewModel.transitionNextExerciseName}
+                </p>
+                {transitionMetricTexts.length > 0 && (
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {transitionMetricTexts.map(text => (
+                      <span
+                        key={`transition-${text}`}
+                        className="rounded-full border border-emerald-400/60 bg-emerald-500/20 px-4 py-2 text-base font-semibold text-emerald-100"
+                      >
+                        {text}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="space-y-2" data-testid="transition-stopwatch">
+                <p className="text-sm text-slate-400">휴식 스톱워치</p>
+                <p className="text-4xl font-bold tabular-nums text-slate-100 sm:text-5xl">
+                  {formatTime(viewModel.transitionElapsedSeconds ?? 0)}
+                </p>
+              </section>
+            </div>
+          )}
         </main>
 
         <footer className="pb-2">
-          {isResting ? (
+          {isBetweenExercises ? (
+            <button
+              onClick={onStartNextExercise}
+              className="w-full rounded-2xl bg-emerald-400 px-6 py-5 text-xl font-semibold text-slate-950 transition-colors hover:bg-emerald-300"
+            >
+              다음 운동 시작
+            </button>
+          ) : isResting ? (
             <button
               onClick={onSkipRest}
               className="w-full rounded-2xl bg-slate-100 px-6 py-5 text-lg font-semibold text-slate-900 transition-colors hover:bg-slate-200"
