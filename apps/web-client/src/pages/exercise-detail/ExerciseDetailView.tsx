@@ -24,6 +24,7 @@ interface ExerciseDetailViewProps {
   onDurationInputChange: (value: string) => void;
   onAddExercise: () => void;
   onCompleteRoutine: () => void;
+  secondaryActionLabel?: string;
 }
 
 export function ExerciseDetailView({
@@ -41,7 +42,8 @@ export function ExerciseDetailView({
   onStrengthSetStepChange,
   onDurationInputChange,
   onAddExercise,
-  onCompleteRoutine
+  onCompleteRoutine,
+  secondaryActionLabel
 }: ExerciseDetailViewProps) {
   const canDecreaseSets = setCount > setRange.min;
   const canIncreaseSets = setCount < setRange.max;
@@ -195,7 +197,7 @@ export function ExerciseDetailView({
               disabled={!isFormValid}
               className="rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:border-gray-800 disabled:bg-gray-900 disabled:text-gray-600"
             >
-              운동 더 추가
+              {secondaryActionLabel ?? '운동 더 추가'}
             </button>
             <button
               type="button"

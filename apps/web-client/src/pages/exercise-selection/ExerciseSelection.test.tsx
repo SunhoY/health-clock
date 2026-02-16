@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseSelection } from './ExerciseSelection';
+import { resetLocalPresets } from '../preset-selection/presetStore';
 
 // Mock console.log
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
@@ -10,6 +11,7 @@ const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
 describe('ExerciseSelection', () => {
   beforeEach(() => {
     mockConsoleLog.mockClear();
+    resetLocalPresets();
   });
 
   afterAll(() => {
@@ -68,4 +70,25 @@ describe('ExerciseSelection', () => {
 
     expect(screen.getByText('가슴 운동')).toBeInTheDocument();
   });
-}); 
+
+  it('편집 모드에서는 선택한 루틴의 운동 목록을 표시한다', async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/exercise-selection/edit',
+            state: { mode: 'edit', presetId: '2' }
+          }
+        ]}
+      >
+        <Routes>
+          <Route path="/exercise-selection/:bodyPart" element={<ExerciseSelection />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('수정할 운동 선택')).toBeInTheDocument();
+    expect(await screen.findByText('벤치프레스')).toBeInTheDocument();
+    expect(screen.getByText('바벨 로우')).toBeInTheDocument();
+  });
+});

@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseDetail } from './ExerciseDetail';
 import { getTempRoutineData, setTempRoutineData } from '../routine-title/RoutineTitle';
 import { getLocalPresets, resetLocalPresets } from '../preset-selection/presetStore';
+import * as presetApi from '../preset-selection/presetApi';
 
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
   // noop
@@ -16,9 +17,12 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate
 }));
 
-const renderWithRoute = (route: string) => {
+const renderWithRoute = (
+  route: string,
+  state?: { mode?: 'create' | 'edit'; presetId?: string; presetExercise?: { id: string; name: string; part: string } }
+) => {
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter initialEntries={[state ? { pathname: route, state } : route]}>
       <Routes>
         <Route path="/exercise-detail/:bodyPart/:exerciseId" element={<ExerciseDetail />} />
       </Routes>
@@ -192,5 +196,53 @@ describe('ExerciseDetail', () => {
     renderWithRoute('/exercise-detail/chest/bench-press');
 
     expect(screen.getByText('완료')).toBeDisabled();
+  });
+
+  it('편집 모드에서는 기존 값을 불러오고 보조 버튼 라벨이 변경된다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press', {
+      mode: 'edit',
+      presetId: '2',
+      presetExercise: { id: 'bench-press', name: '벤치프레스', part: 'chest' }
+    });
+
+    const weightInputs = (await screen.findAllByLabelText('중량(kg)')) as HTMLInputElement[];
+    await waitFor(() => {
+      expect(weightInputs[0].value).toBe('80');
+    });
+    expect(screen.getByText('다른 운동 수정하기')).toBeInTheDocument();
+
+    await user.click(screen.getByText('다른 운동 수정하기'));
+    expect(mockNavigate).toHaveBeenCalledWith('/exercise-selection/edit', {
+      state: { mode: 'edit', presetId: '2' }
+    });
+  });
+
+  it('편집 모드 완료 시 updatePresetExercise API를 호출한다', async () => {
+    const user = userEvent.setup();
+    const updateSpy = jest.spyOn(presetApi, 'updatePresetExercise');
+
+    renderWithRoute('/exercise-detail/chest/bench-press', {
+      mode: 'edit',
+      presetId: '2',
+      presetExercise: { id: 'bench-press', name: '벤치프레스', part: 'chest' }
+    });
+
+    const weightInputs = (await screen.findAllByLabelText('중량(kg)')) as HTMLInputElement[];
+    const repsInputs = (await screen.findAllByLabelText('횟수')) as HTMLInputElement[];
+    await waitFor(() => {
+      expect(repsInputs[0].value).toBe('8');
+    });
+    await user.clear(weightInputs[0]);
+    await user.type(weightInputs[0], '85');
+    await user.click(screen.getByText('완료'));
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      '2',
+      expect.objectContaining({
+        exerciseName: '벤치프레스'
+      })
+    );
+    expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
   });
 });

@@ -3,12 +3,16 @@ import { Exercise } from '../../types/exercise';
 interface ExerciseSelectionViewProps {
   selectedBodyPart: string;
   exercises: Exercise[];
+  title?: string;
+  emptyMessage?: string;
   onExerciseSelect: (exercise: Exercise) => void;
 }
 
 export function ExerciseSelectionView({ 
   selectedBodyPart, 
   exercises, 
+  title,
+  emptyMessage,
   onExerciseSelect 
 }: ExerciseSelectionViewProps) {
   const getBodyPartDisplayName = (bodyPart: string): string => {
@@ -31,7 +35,7 @@ export function ExerciseSelectionView({
     <div className="min-h-screen bg-gray-900 px-6 py-8 text-white">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-7 text-center">
-          <h1 className="text-3xl font-bold">{getBodyPartDisplayName(selectedBodyPart)} 운동</h1>
+          <h1 className="text-3xl font-bold">{title ?? `${getBodyPartDisplayName(selectedBodyPart)} 운동`}</h1>
         </div>
 
         <div className="space-y-3">
@@ -52,7 +56,7 @@ export function ExerciseSelectionView({
           ) : (
             <div className="rounded-2xl border border-gray-700 bg-gray-800 px-4 py-10 text-center">
               <p className="text-base text-gray-400">
-                선택된 부위에 해당하는 운동이 없습니다.
+                {emptyMessage ?? '선택된 부위에 해당하는 운동이 없습니다.'}
               </p>
             </div>
           )}

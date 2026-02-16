@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateRoutineView } from './CreateRoutineView';
 
 // 운동 부위 데이터
@@ -16,6 +17,17 @@ const BODY_PARTS = [
 
 export const CreateRoutine = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = (location.state as { mode?: 'create' | 'edit'; presetId?: string } | null) ?? null;
+
+  useEffect(() => {
+    if (routeState?.mode === 'edit' && routeState.presetId) {
+      navigate('/exercise-selection/edit', {
+        replace: true,
+        state: { mode: 'edit', presetId: routeState.presetId }
+      });
+    }
+  }, [navigate, routeState?.mode, routeState?.presetId]);
 
   const handleBodyPartSelect = (bodyPartId: string) => {
     navigate(`/exercise-selection/${bodyPartId}`);

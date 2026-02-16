@@ -27,7 +27,16 @@ describe('PresetSelection', () => {
     );
 
     expect(screen.getByText('운동 루틴 선택')).toBeInTheDocument();
-    expect(screen.getByText('전신 운동')).toBeInTheDocument();
+  });
+
+  it('프리셋 목록은 mock API(fetchPresets) 결과를 렌더링한다', async () => {
+    render(
+      <MemoryRouter>
+        <PresetSelection />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('전신 운동')).toBeInTheDocument();
     expect(screen.getByText('상체 집중')).toBeInTheDocument();
   });
 
@@ -41,7 +50,7 @@ describe('PresetSelection', () => {
       </MemoryRouter>
     );
 
-    const presetCard = screen.getByText('전신 운동');
+    const presetCard = await screen.findByText('전신 운동');
     await user.click(presetCard);
 
     expect(consoleSpy).toHaveBeenCalledWith('선택된 프리셋:', '1');
@@ -53,9 +62,9 @@ describe('PresetSelection', () => {
           presetTitle: '전신 운동',
           exercises: expect.arrayContaining([
             expect.objectContaining({
-              exerciseId: '1',
+              exerciseId: 'squat',
               exerciseName: '스쿼트',
-              bodyPart: '전신',
+              bodyPart: 'legs',
               sets: 3,
             }),
           ]),
@@ -90,7 +99,7 @@ describe('PresetSelection', () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
+    await user.click(await screen.findByRole('button', { name: '전신 운동 관리 메뉴' }));
     await user.click(screen.getByRole('button', { name: '편집' }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/create-routine', {
@@ -109,7 +118,7 @@ describe('PresetSelection', () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
+    await user.click(await screen.findByRole('button', { name: '전신 운동 관리 메뉴' }));
     await user.click(screen.getByRole('button', { name: '삭제' }));
 
     expect(deletePresetSpy).toHaveBeenCalledWith('1');
@@ -128,7 +137,7 @@ describe('PresetSelection', () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
+    await user.click(await screen.findByRole('button', { name: '전신 운동 관리 메뉴' }));
     await user.click(screen.getByRole('button', { name: '삭제' }));
 
     expect(screen.getByText('전신 운동')).toBeInTheDocument();
@@ -136,7 +145,7 @@ describe('PresetSelection', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('로컬 저장된 새 루틴이 프리셋 목록에 표시된다', () => {
+  it('로컬 저장된 새 루틴이 프리셋 목록에 표시된다', async () => {
     addLocalPreset('새로 만든 루틴', [
       {
         exerciseId: 'bench-press',
@@ -153,6 +162,6 @@ describe('PresetSelection', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('새로 만든 루틴')).toBeInTheDocument();
+    expect(await screen.findByText('새로 만든 루틴')).toBeInTheDocument();
   });
 }); 

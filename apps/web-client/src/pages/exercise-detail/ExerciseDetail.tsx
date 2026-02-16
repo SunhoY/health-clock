@@ -1,10 +1,40 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { ExerciseDetailView } from './ExerciseDetailView';
 import { EXERCISES_DATA, FORM_CONFIG, Exercise, ExerciseDetail as ExerciseDetailModel, RoutineTitleForm } from '../../types/exercise';
 import { RoutineTitleView } from '../routine-title/RoutineTitleView';
 import { appendTempRoutineData, getTempRoutineData } from '../routine-title/RoutineTitle';
-import { addLocalPreset } from '../preset-selection/presetStore';
+import { addLocalPreset, updateLocalPresetExercise } from '../preset-selection/presetStore';
+import { fetchPresetById, updatePresetExercise } from '../preset-selection/presetApi';
+
+interface ExerciseDetailRouteState {
+  mode?: 'create' | 'edit';
+  presetId?: string;
+  presetExercise?: {
+    id: string;
+    name: string;
+    part: string;
+  };
+}
+
+const BODY_PART_ALIAS: Record<string, string> = {
+  가슴: 'chest',
+  상체: 'chest',
+  등: 'back',
+  하체: 'legs',
+  어깨: 'shoulders',
+  팔: 'arms',
+  복부: 'abs',
+  코어: 'abs',
+  종아리: 'calves',
+  전신: 'fullbody',
+  유산소: 'cardio'
+};
+
+const EXERCISE_NAME_ALIAS: Record<string, string> = {
+  푸시업: '푸쉬업',
+  랫풀다운: '렛풀다운'
+};
 
 interface StrengthSetInput {
   setNumber: number;
@@ -96,6 +126,9 @@ const updateStrengthField = (
 export function ExerciseDetail() {
   const { bodyPart, exerciseId } = useParams<{ bodyPart: string; exerciseId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = (location.state as ExerciseDetailRouteState | null) ?? null;
+  const isEditMode = routeState?.mode === 'edit' && Boolean(routeState.presetId);
 
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [setCount, setSetCount] = useState(FORM_CONFIG.sets.default);
@@ -115,10 +148,73 @@ export function ExerciseDetail() {
       return;
     }
 
-    const exercises = EXERCISES_DATA[bodyPart] || [];
-    const foundExercise = exercises.find((ex) => ex.id === exerciseId);
+    const normalizedBodyPart = BODY_PART_ALIAS[bodyPart] ?? bodyPart;
+    const exercises = EXERCISES_DATA[normalizedBodyPart] || [];
+    const normalizedPresetName = routeState?.presetExercise?.name
+      ? EXERCISE_NAME_ALIAS[routeState.presetExercise.name] ?? routeState.presetExercise.name
+      : undefined;
+    const foundExercise =
+      exercises.find((ex) => ex.id === exerciseId) ||
+      exercises.find((ex) => ex.name === normalizedPresetName);
     setExercise(foundExercise || null);
-  }, [bodyPart, exerciseId]);
+  }, [bodyPart, exerciseId, routeState?.presetExercise?.name]);
+
+  useEffect(() => {
+    if (!isEditMode || !exercise || !routeState?.presetId) {
+      return;
+    }
+
+    let mounted = true;
+
+    fetchPresetById(routeState.presetId).then((preset) => {
+      if (!mounted || !preset) {
+        return;
+      }
+
+      const targetExercise =
+        preset.exercises.find((item) => item.id === routeState.presetExercise?.id) ||
+        preset.exercises.find((item) => item.name === exercise.name);
+
+      if (!targetExercise) {
+        return;
+      }
+
+      if (exercise.bodyPart === 'cardio') {
+        setDurationInput(String(targetExercise.duration ?? FORM_CONFIG.duration.default));
+        return;
+      }
+
+      const nextSetCount = targetExercise.sets || FORM_CONFIG.sets.default;
+      const mappedSets = Array.from({ length: nextSetCount }, (_, index) => {
+        const setNumber = index + 1;
+        const setDetail = targetExercise.setDetails?.find((detail) => detail.setNumber === setNumber);
+        const fallbackWeight = targetExercise.weight ?? 0;
+        const fallbackReps = targetExercise.reps ?? 10;
+        const weight = setDetail?.weight ?? targetExercise.weight;
+        const reps = setDetail?.reps ?? targetExercise.reps;
+
+        return {
+          setNumber,
+          weightInput: String(weight ?? fallbackWeight),
+          repsInput: String(reps ?? fallbackReps),
+          weightTouched: true,
+          repsTouched: true
+        };
+      });
+
+      setSetCount(nextSetCount);
+      setStrengthSets(mappedSets);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    exercise,
+    isEditMode,
+    routeState?.presetExercise?.id,
+    routeState?.presetId
+  ]);
 
   const isCardio = exercise?.bodyPart === 'cardio';
 
@@ -306,7 +402,35 @@ export function ExerciseDetail() {
     navigate('/preset-selection');
   };
 
+  const saveEditDraft = (detail: ExerciseDetailModel): boolean => {
+    if (!routeState?.presetId) {
+      return false;
+    }
+
+    const updated = updateLocalPresetExercise(routeState.presetId, detail);
+    return Boolean(updated);
+  };
+
+  const completeEdit = async () => {
+    const detail = buildExerciseDetail();
+    if (!detail || !routeState?.presetId) {
+      return;
+    }
+
+    try {
+      await updatePresetExercise(routeState.presetId, detail);
+      navigate('/preset-selection');
+    } catch (error) {
+      console.error('루틴 편집 저장에 실패했습니다.', error);
+    }
+  };
+
   const saveCurrentExercise = (mode: 'add' | 'complete') => {
+    if (isEditMode && mode === 'complete') {
+      void completeEdit();
+      return;
+    }
+
     if (mode === 'complete') {
       openTitleDialog();
       return;
@@ -314,6 +438,21 @@ export function ExerciseDetail() {
 
     const detail = buildExerciseDetail();
     if (!detail) {
+      return;
+    }
+
+    if (isEditMode) {
+      const saved = saveEditDraft(detail);
+      if (!saved) {
+        return;
+      }
+
+      navigate('/exercise-selection/edit', {
+        state: {
+          mode: 'edit',
+          presetId: routeState?.presetId
+        }
+      });
       return;
     }
 
@@ -351,6 +490,7 @@ export function ExerciseDetail() {
         onDurationInputChange={setDurationInput}
         onAddExercise={() => saveCurrentExercise('add')}
         onCompleteRoutine={() => saveCurrentExercise('complete')}
+        secondaryActionLabel={isEditMode ? '다른 운동 수정하기' : '운동 더 추가'}
       />
       {isTitleDialogOpen && (
         <RoutineTitleView

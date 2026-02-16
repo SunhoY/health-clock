@@ -1,13 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PresetSelectionView } from './PresetSelectionView';
 import { ExerciseDetail } from '../../types/exercise';
 import { fetchPresets, deletePreset } from './presetApi';
-import { getLocalPresets } from './presetStore';
+import { PresetItem } from './presetStore';
 
 export const PresetSelection = () => {
   const navigate = useNavigate();
-  const [presets, setPresets] = useState(getLocalPresets());
+  const [presets, setPresets] = useState<PresetItem[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchPresets()
+      .then((response) => {
+        if (mounted) {
+          setPresets(response);
+        }
+      })
+      .catch((error) => {
+        console.error('프리셋 목록 조회에 실패했습니다.', error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const toExerciseDetails = (
     exercises: typeof presets[number]['exercises']
