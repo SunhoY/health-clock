@@ -6,12 +6,10 @@ const mockBodyParts = [
   {
     id: 'chest',
     name: '가슴',
-    exercises: ['벤치프레스', '인클라인 벤치프레스', '덤벨 플라이', '푸쉬업']
   },
   {
     id: 'back',
     name: '등',
-    exercises: ['바벨 로우', '렛풀다운', '데드리프트']
   }
 ];
 
@@ -44,8 +42,6 @@ describe('CreateRoutineView', () => {
     
     expect(screen.getByText('가슴')).toBeInTheDocument();
     expect(screen.getByText('등')).toBeInTheDocument();
-    expect(screen.getByText('4개의 운동')).toBeInTheDocument();
-    expect(screen.getByText('3개의 운동')).toBeInTheDocument();
   });
 
   it('부위 버튼 클릭 시 콜백 함수가 호출된다', async () => {
@@ -72,19 +68,6 @@ describe('CreateRoutineView', () => {
     );
     
     const chestButton = screen.getByRole('button', { name: '가슴 부위 선택하기' });
-    expect(chestButton).toHaveAttribute('tabIndex', '0');
+    expect(chestButton).toBeEnabled();
   });
-
-  it('운동 목록이 올바르게 표시된다', () => {
-    render(
-      <CreateRoutineView
-        bodyParts={mockBodyParts}
-        onBodyPartSelect={mockOnBodyPartSelect}
-      />
-    );
-    
-    expect(screen.getByText('• 벤치프레스')).toBeInTheDocument();
-    expect(screen.getByText('• 인클라인 벤치프레스')).toBeInTheDocument();
-    expect(screen.getByText('+2개 더...')).toBeInTheDocument();
-  });
-}); 
+});

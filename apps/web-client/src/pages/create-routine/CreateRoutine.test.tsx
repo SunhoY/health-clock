@@ -38,7 +38,6 @@ describe('CreateRoutine', () => {
 
   it('부위 선택 시 운동 선택 화면으로 라우팅된다', async () => {
     const user = userEvent.setup();
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     render(
       <MemoryRouter>
@@ -49,14 +48,11 @@ describe('CreateRoutine', () => {
     const chestButton = screen.getByText('가슴');
     await user.click(chestButton);
     
-    expect(consoleSpy).toHaveBeenCalledWith('선택된 부위:', 'chest');
     expect(mockNavigate).toHaveBeenCalledWith('/exercise-selection/chest');
-    consoleSpy.mockRestore();
   });
 
   it('모든 부위 버튼이 클릭 가능하다', async () => {
     const user = userEvent.setup();
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     render(
       <MemoryRouter>
@@ -71,7 +67,6 @@ describe('CreateRoutine', () => {
       await user.click(button);
     }
     
-    expect(consoleSpy).toHaveBeenCalledTimes(9);
-    consoleSpy.mockRestore();
+    expect(mockNavigate).toHaveBeenCalledTimes(9);
   });
-}); 
+});

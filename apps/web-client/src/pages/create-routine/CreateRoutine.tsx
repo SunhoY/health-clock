@@ -18,7 +18,6 @@ export const CreateRoutine = () => {
   const navigate = useNavigate();
 
   const handleBodyPartSelect = (bodyPartId: string) => {
-    console.log('선택된 부위:', bodyPartId);
     navigate(`/exercise-selection/${bodyPartId}`);
   };
 
