@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface PresetSelectionViewProps {
   presets: Preset[];
@@ -32,23 +32,42 @@ export const PresetSelectionView = ({
   onEditPreset,
   onDeletePreset
 }: PresetSelectionViewProps) => {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [openMenuPresetId, setOpenMenuPresetId] = useState<string | null>(null);
+  const [longPressActivePresetId, setLongPressActivePresetId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredPresetIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const blockContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+
+    root.addEventListener('contextmenu', blockContextMenu);
+    return () => {
+      root.removeEventListener('contextmenu', blockContextMenu);
+    };
+  }, []);
 
   const startLongPress = (presetId: string) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
     }
 
+    setLongPressActivePresetId(presetId);
     longPressTriggeredPresetIdRef.current = null;
     longPressTimerRef.current = setTimeout(() => {
+      setLongPressActivePresetId(null);
       setOpenMenuPresetId(presetId);
       longPressTriggeredPresetIdRef.current = presetId;
     }, 500);
   };
 
   const clearLongPress = () => {
+    setLongPressActivePresetId(null);
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -65,23 +84,27 @@ export const PresetSelectionView = ({
     onPresetSelect(presetId);
   };
 
-  const handleMenuToggle = (presetId: string) => {
-    setOpenMenuPresetId((prev) => (prev === presetId ? null : presetId));
+  const openActionDialog = (presetId: string) => {
+    setOpenMenuPresetId(presetId);
+  };
+
+  const closeActionDialog = () => {
+    setOpenMenuPresetId(null);
   };
 
   const handleEditClick = (presetId: string) => {
-    setOpenMenuPresetId(null);
+    closeActionDialog();
     onEditPreset(presetId);
   };
 
   const handleDeleteClick = (presetId: string) => {
-    setOpenMenuPresetId(null);
+    closeActionDialog();
     onDeletePreset(presetId);
   };
 
   if (presets.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 px-6 pb-28 pt-16 text-white sm:px-10 sm:pb-16">
+      <div ref={rootRef} className="min-h-screen bg-gray-900 px-6 pb-28 pt-16 text-white sm:px-10 sm:pb-16">
         <div className="mx-auto flex min-h-[70vh] w-full max-w-2xl items-center justify-center text-center">
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">운동 루틴 선택</h1>
@@ -99,7 +122,7 @@ export const PresetSelectionView = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 px-6 pb-28 pt-16 text-white sm:px-10 sm:pb-16">
+    <div ref={rootRef} className="min-h-screen bg-gray-900 px-6 pb-28 pt-16 text-white sm:px-10 sm:pb-16">
       <div className="mx-auto w-full max-w-2xl">
         <h1 className="mb-8 text-center text-3xl font-bold">운동 루틴 선택</h1>
 
@@ -111,12 +134,24 @@ export const PresetSelectionView = ({
                 onMouseDown={() => startLongPress(preset.id)}
                 onMouseUp={clearLongPress}
                 onMouseLeave={clearLongPress}
-                onTouchStart={() => startLongPress(preset.id)}
+                onTouchStart={(event) => {
+                  event.preventDefault();
+                  startLongPress(preset.id);
+                }}
                 onTouchEnd={clearLongPress}
                 onTouchCancel={clearLongPress}
+                onContextMenu={(event) => event.preventDefault()}
                 aria-label={`${preset.title} 선택`}
-                className="flex w-full items-center justify-between rounded-xl border border-gray-700 bg-gray-800 px-5 py-4 pr-16 text-left transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                className="relative flex w-full select-none items-center justify-between overflow-hidden rounded-xl border border-gray-700 bg-gray-800 px-5 py-4 pr-16 text-left transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-300 [-webkit-touch-callout:none]"
               >
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-y-0 left-0 bg-cyan-400/20 ${
+                    longPressActivePresetId === preset.id
+                      ? 'w-full transition-all duration-500 ease-linear'
+                      : 'w-0 transition-none'
+                  }`}
+                />
                 <div>
                   <h3 className="text-lg font-semibold text-white">{preset.title}</h3>
                   <p className="mt-1 text-sm text-gray-400">{preset.exercises.length}개 운동</p>
@@ -127,31 +162,12 @@ export const PresetSelectionView = ({
                 aria-label={`${preset.title} 관리 메뉴`}
                 onClick={(event) => {
                   event.stopPropagation();
-                  handleMenuToggle(preset.id);
+                  openActionDialog(preset.id);
                 }}
-                className="absolute right-3 top-1/2 h-10 w-10 -translate-y-1/2 rounded-lg border border-gray-600 bg-gray-700 text-xl font-bold text-gray-200 transition-colors hover:bg-gray-600"
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center text-xl font-bold leading-none text-gray-300 transition-colors hover:text-white"
               >
-                ≡
+                ⋮
               </button>
-
-              {openMenuPresetId === preset.id && (
-                <div className="absolute right-3 top-[calc(100%+0.35rem)] z-20 min-w-[120px] rounded-lg border border-gray-700 bg-gray-800 p-1 shadow-lg">
-                  <button
-                    type="button"
-                    onClick={() => handleEditClick(preset.id)}
-                    className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-gray-700"
-                  >
-                    편집
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteClick(preset.id)}
-                    className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-rose-300 transition-colors hover:bg-gray-700"
-                  >
-                    삭제
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -163,6 +179,38 @@ export const PresetSelectionView = ({
       >
         루틴 만들기
       </button>
+
+      {openMenuPresetId && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/50 px-6"
+          onClick={closeActionDialog}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="루틴 관리 메뉴"
+            className="w-full max-w-xs select-none rounded-2xl border border-gray-700 bg-gray-800 p-3 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleEditClick(openMenuPresetId)}
+                className="w-full rounded-xl px-4 py-3 text-center text-lg font-bold text-white transition-colors hover:bg-gray-700"
+              >
+                편집
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteClick(openMenuPresetId)}
+                className="w-full rounded-xl px-4 py-3 text-center text-lg font-bold text-rose-300 transition-colors hover:bg-gray-700"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

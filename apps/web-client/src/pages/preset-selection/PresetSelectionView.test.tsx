@@ -93,6 +93,7 @@ describe('PresetSelectionView', () => {
 
     await user.click(screen.getByRole('button', { name: '전신 운동 관리 메뉴' }));
 
+    expect(screen.getByRole('dialog', { name: '루틴 관리 메뉴' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '편집' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
     expect(mockOnPresetSelect).not.toHaveBeenCalled();
@@ -118,10 +119,30 @@ describe('PresetSelectionView', () => {
     });
     fireEvent.mouseUp(card);
 
+    expect(screen.getByRole('dialog', { name: '루틴 관리 메뉴' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '편집' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
 
     jest.useRealTimers();
+  });
+
+  it('카드 우클릭(컨텍스트 메뉴)을 막는다', () => {
+    render(
+      <PresetSelectionView
+        presets={mockPresets}
+        onPresetSelect={mockOnPresetSelect}
+        onAddWorkout={mockOnAddWorkout}
+        onEditPreset={mockOnEditPreset}
+        onDeletePreset={mockOnDeletePreset}
+      />
+    );
+
+    const card = screen.getByRole('button', { name: '전신 운동 선택' });
+    const blocked = !card.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    );
+
+    expect(blocked).toBe(true);
   });
 
   it('편집 클릭 시 onEditPreset 함수가 호출된다', async () => {
