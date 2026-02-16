@@ -7,6 +7,7 @@ import { ExerciseDetail } from '../pages/exercise-detail';
 import { RoutineTitle } from '../pages/routine-title';
 import { Workout } from '../pages/workout';
 import { WorkoutComplete } from '../pages/workout-complete';
+import { WorkoutSummary } from '../pages/workout-summary';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
       <Route path="/routine-title" element={<RoutineTitle />} />
       <Route path="/workout" element={<Workout />} />
       <Route path="/workout-complete" element={<WorkoutComplete />} />
+      <Route path="/workout-summary" element={<WorkoutSummary />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -3,9 +3,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { WorkoutSummary, setTempWorkoutSessions } from './WorkoutSummary';
 import { WorkoutCompletionData } from '../../types/exercise';
 
-// Mock react-router-dom
 const mockNavigate = jest.fn();
 let mockLocationState: unknown = undefined;
+
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
@@ -17,36 +17,35 @@ jest.mock('react-router-dom', () => ({
   }),
 }));
 
-// Mock console.log
-const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => undefined);
-
 const mockCompletionData: WorkoutCompletionData = {
   sessionId: 'session-1',
-  completedAt: new Date(), // 오늘 날짜로 설정
+  completedAt: new Date(),
   duration: 45,
   exercises: [
     {
-      exerciseId: 'ex-1',
-      exerciseName: '스쿼트',
-      bodyPart: 'legs',
-      sets: [
-        { setNumber: 1, exerciseId: 'ex-1', weight: 50, reps: 10, completed: true },
-        { setNumber: 2, exerciseId: 'ex-1', weight: 50, reps: 10, completed: true },
-      ],
-      totalWeight: 100,
-    },
-    {
-      exerciseId: 'ex-2',
+      exerciseId: 'ex-cardio',
       exerciseName: '러닝',
       bodyPart: 'cardio',
+      sets: [{ setNumber: 1, exerciseId: 'ex-cardio', duration: 30, completed: true }],
+    },
+    {
+      exerciseId: 'ex-upper',
+      exerciseName: '벤치프레스',
+      bodyPart: 'chest',
       sets: [
-        { setNumber: 1, exerciseId: 'ex-2', duration: 1800, completed: true }, // 30분
+        { setNumber: 1, exerciseId: 'ex-upper', weight: 50, reps: 10, completed: true },
+        { setNumber: 2, exerciseId: 'ex-upper', weight: 60, reps: 8, completed: true },
       ],
-      totalDuration: 1800,
+    },
+    {
+      exerciseId: 'ex-core',
+      exerciseName: '크런치',
+      bodyPart: 'abs',
+      sets: [{ setNumber: 1, exerciseId: 'ex-core', weight: 20, reps: 15, completed: true }],
     },
   ],
-  totalSets: 3,
-  totalWeight: 100,
+  totalSets: 4,
+  totalWeight: 130,
   caloriesBurned: 250,
 };
 
@@ -57,31 +56,7 @@ describe('WorkoutSummary', () => {
     setTempWorkoutSessions([]);
   });
 
-  afterAll(() => {
-    mockConsoleLog.mockRestore();
-  });
-
-  it('날짜별 운동 데이터 조회 시 콘솔에 로그를 출력한다', () => {
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    expect(mockConsoleLog).toHaveBeenCalledWith('날짜별 운동 데이터 조회:', expect.any(String));
-  });
-
-  it('운동 데이터 집계 계산 시 콘솔에 로그를 출력한다', () => {
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    expect(mockConsoleLog).toHaveBeenCalledWith('운동 데이터 집계 결과:', expect.any(Object));
-  });
-
-  it('URL state에서 completionData를 받아와서 임시 저장소에 추가한다', () => {
+  it('location state 기반 데이터로 부위별 상세 요약이 표시된다', async () => {
     mockLocationState = { completionData: mockCompletionData };
 
     render(
@@ -90,100 +65,77 @@ describe('WorkoutSummary', () => {
       </MemoryRouter>
     );
 
-    expect(mockConsoleLog).toHaveBeenCalledWith('운동 완료 데이터가 요약 화면에 추가됨:', mockCompletionData);
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(screen.getByTestId('today-body-parts')).toHaveTextContent('유산소');
+    expect(screen.getByTestId('today-body-parts')).toHaveTextContent('상체');
+    expect(screen.getByTestId('today-body-parts')).toHaveTextContent('코어');
+
+    expect(screen.getByTestId('section-cardio')).toHaveTextContent('kcal');
+    expect(screen.getByTestId('section-upper')).toHaveTextContent('2세트');
+    expect(screen.getByTestId('section-upper')).toHaveTextContent('60kg');
+    expect(screen.getByTestId('section-core')).toHaveTextContent('1세트');
+    expect(screen.getByTestId('section-core')).toHaveTextContent('20kg');
   });
 
-  it('뒤로가기 버튼 클릭 시 이전 페이지로 이동한다', () => {
+  it('오늘 상체만 수행하면 상체 섹션만 표시된다', async () => {
+    const upperOnlyData: WorkoutCompletionData = {
+      ...mockCompletionData,
+      exercises: [
+        {
+          exerciseId: 'ex-upper',
+          exerciseName: '벤치프레스',
+          bodyPart: 'chest',
+          sets: [{ setNumber: 1, exerciseId: 'ex-upper', weight: 70, reps: 6, completed: true }],
+        },
+      ],
+    };
+
+    setTempWorkoutSessions([upperOnlyData]);
+
     render(
       <MemoryRouter>
         <WorkoutSummary />
       </MemoryRouter>
     );
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    expect(screen.getByTestId('today-body-parts')).toHaveTextContent('상체');
+    expect(screen.queryByTestId('section-cardio')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('section-lower')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('section-core')).not.toBeInTheDocument();
+    expect(screen.getByTestId('section-upper')).toHaveTextContent('1세트');
+    expect(screen.getByTestId('section-upper')).toHaveTextContent('70kg');
+  });
+
+  it('뒤로가기 버튼 클릭 시 이전 페이지로 이동한다', async () => {
+    setTempWorkoutSessions([mockCompletionData]);
+
+    render(
+      <MemoryRouter>
+        <WorkoutSummary />
+      </MemoryRouter>
+    );
+
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     fireEvent.click(screen.getByRole('button', { name: '뒤로가기' }));
     expect(mockNavigate).toHaveBeenCalledWith(-1);
   });
 
-  it('홈으로 버튼 클릭 시 홈 페이지로 이동한다', () => {
+  it('홈으로 버튼 클릭 시 홈 페이지로 이동한다', async () => {
+    setTempWorkoutSessions([mockCompletionData]);
+
     render(
       <MemoryRouter>
         <WorkoutSummary />
       </MemoryRouter>
     );
+
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     fireEvent.click(screen.getByRole('button', { name: '홈으로' }));
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
-
-  it('요약 화면이 렌더링된다', () => {
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText('오늘의 운동 요약')).toBeInTheDocument();
-  });
-
-  it('운동 기록이 없을 때 빈 상태가 표시된다', async () => {
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    // 로딩이 완료되면 빈 상태가 표시되어야 함
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    expect(screen.getByText('오늘은 운동 기록이 없어요')).toBeInTheDocument();
-    expect(screen.getByText('운동을 시작하고 기록을 남겨보세요!')).toBeInTheDocument();
-  });
-
-  it('운동 데이터가 있을 때 요약 정보가 표시된다', async () => {
-    // 임시 저장소에 데이터 추가
-    setTempWorkoutSessions([mockCompletionData]);
-
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    // 로딩이 완료되면 요약 정보가 표시되어야 함
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    expect(screen.getByText('1')).toBeInTheDocument(); // 운동 세션
-    expect(screen.getByText('45분')).toBeInTheDocument(); // 총 운동 시간
-    expect(screen.getByText('운동 종류')).toBeInTheDocument(); // 운동 종류 라벨
-    expect(screen.getByText('총 세트')).toBeInTheDocument(); // 총 세트 라벨
-  });
-
-  it('웨이트 운동과 유산소 운동이 올바른 형식으로 표시된다', async () => {
-    // 임시 저장소에 데이터 추가
-    setTempWorkoutSessions([mockCompletionData]);
-
-    render(
-      <MemoryRouter>
-        <WorkoutSummary />
-      </MemoryRouter>
-    );
-
-    // 로딩이 완료되면 운동 목록이 표시되어야 함
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    expect(screen.getByText('legs - 스쿼트 - 2세트')).toBeInTheDocument();
-    expect(screen.getByText(/유산소 - 러닝/)).toBeInTheDocument();
-  });
-
-  it('특정 날짜의 데이터를 조회할 수 있다', async () => {
-    const targetDate = new Date('2024-01-01T00:00:00Z');
-    
-    render(
-      <MemoryRouter>
-        <WorkoutSummary targetDate={targetDate} />
-      </MemoryRouter>
-    );
-
-    expect(mockConsoleLog).toHaveBeenCalledWith('날짜별 운동 데이터 조회:', targetDate.toDateString());
-  });
-}); 
+});

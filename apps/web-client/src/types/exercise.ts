@@ -314,3 +314,18 @@ export interface SummaryStatistics {
   strongestLift?: { exercise: string; weight: number };
   longestCardio?: { exercise: string; duration: number };
 } 
+
+export type WorkoutBodyPart = 'cardio' | 'upper' | 'lower' | 'core';
+
+export interface WorkoutDetailSummarySection {
+  bodyPart: WorkoutBodyPart;
+  label: string;
+  caloriesBurned?: number;
+  totalSets?: number;
+  maxWeight?: number;
+}
+
+export interface WorkoutDetailSummaryViewModel {
+  todayBodyParts: WorkoutBodyPart[];
+  sections: WorkoutDetailSummarySection[];
+}

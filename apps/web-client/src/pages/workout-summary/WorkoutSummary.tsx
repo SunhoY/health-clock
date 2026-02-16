@@ -1,112 +1,126 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { WorkoutSummaryView } from './WorkoutSummaryView';
-import { 
-  DailyWorkoutSummary, 
-  ExerciseSummary,
-  WorkoutCompletionData 
+import {
+  WorkoutCompletionData,
+  WorkoutDetailSummaryViewModel,
+  WorkoutDetailSummarySection,
+  WorkoutBodyPart
 } from '../../types/exercise';
 
 interface WorkoutSummaryProps {
   targetDate?: Date;
 }
 
-// 임시 데이터 저장소 (실제로는 전역 상태 관리나 API를 사용)
 let tempWorkoutSessions: WorkoutCompletionData[] = [];
 
-const aggregateExercisesByDay = (
+// TODO: 서버 연동 전까지 상세 요약 화면의 기본 노출을 위한 임시 데이터
+const DEFAULT_DETAIL_SUMMARY_VIEW_MODEL: WorkoutDetailSummaryViewModel = {
+  todayBodyParts: ['cardio', 'upper', 'lower', 'core'],
+  sections: [
+    { bodyPart: 'cardio', label: '유산소', caloriesBurned: 320 },
+    { bodyPart: 'upper', label: '상체', totalSets: 8, maxWeight: 60 },
+    { bodyPart: 'lower', label: '하체', totalSets: 6, maxWeight: 100 },
+    { bodyPart: 'core', label: '코어', totalSets: 4, maxWeight: 20 },
+  ],
+};
+
+const toDayRange = (date: Date) => {
+  const dayStart = new Date(date);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(date);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  return { dayStart, dayEnd };
+};
+
+const mapToBodyPart = (bodyPart: string): WorkoutBodyPart | undefined => {
+  if (bodyPart === 'cardio') return 'cardio';
+  if (['chest', 'back', 'shoulders', 'arms'].includes(bodyPart)) return 'upper';
+  if (['legs', 'calves'].includes(bodyPart)) return 'lower';
+  if (['abs', 'core'].includes(bodyPart)) return 'core';
+  return undefined;
+};
+
+const buildDetailViewModel = (
   workoutSessions: WorkoutCompletionData[],
   targetDate: Date
-): DailyWorkoutSummary => {
-  const dayStart = new Date(targetDate);
-  dayStart.setHours(0, 0, 0, 0);
-  
-  const dayEnd = new Date(targetDate);
-  dayEnd.setHours(23, 59, 59, 999);
-  
+): WorkoutDetailSummaryViewModel => {
+  const { dayStart, dayEnd } = toDayRange(targetDate);
   const dailySessions = workoutSessions.filter(session =>
     session.completedAt >= dayStart && session.completedAt <= dayEnd
   );
 
-  const exerciseMap = new Map<string, ExerciseSummary>();
-  let totalDuration = 0;
-  let totalSets = 0;
-  let totalWeight = 0;
-  let totalCardioTime = 0;
+  const sectionMap = new Map<WorkoutBodyPart, WorkoutDetailSummarySection>();
 
   dailySessions.forEach(session => {
-    totalDuration += session.duration;
-    
+    let cardioCaloriesAdded = false;
     session.exercises.forEach(exercise => {
-      const key = `${exercise.exerciseId}-${exercise.bodyPart}`;
-      const existing = exerciseMap.get(key) || {
-        exerciseId: exercise.exerciseId,
-        exerciseName: exercise.exerciseName,
-        bodyPart: exercise.bodyPart,
-        type: exercise.bodyPart === 'cardio' ? 'cardio' : 'weight',
-        totalSets: 0,
-        totalWeight: 0,
-        totalDuration: 0,
-        sessions: []
-      };
+      const bodyPart = mapToBodyPart(exercise.bodyPart);
+      if (!bodyPart) return;
 
-      existing.totalSets += exercise.sets.length;
-      existing.sessions.push(session.sessionId);
-      
-      if (existing.type === 'weight') {
-        const exerciseWeight = exercise.sets.reduce((sum, set) => 
-          sum + ((set.weight || 0) * (set.reps || 0)), 0);
-        existing.totalWeight = (existing.totalWeight || 0) + exerciseWeight;
-        totalWeight += exerciseWeight;
-        totalSets += exercise.sets.length;
-      } else {
-        const exerciseDuration = exercise.sets.reduce((sum, set) => 
-          sum + (set.duration || 0), 0);
-        existing.totalDuration = (existing.totalDuration || 0) + exerciseDuration;
-        totalCardioTime += exerciseDuration;
+      if (bodyPart === 'cardio') {
+        const base = sectionMap.get('cardio') ?? {
+          bodyPart: 'cardio' as const,
+          label: '유산소',
+          caloriesBurned: 0,
+        };
+
+        if (!cardioCaloriesAdded) {
+          const estimated = session.caloriesBurned ?? 0;
+          base.caloriesBurned = (base.caloriesBurned ?? 0) + estimated;
+          cardioCaloriesAdded = true;
+        }
+        sectionMap.set('cardio', base);
+        return;
       }
 
-      exerciseMap.set(key, existing);
+      const labelMap: Record<'upper' | 'lower' | 'core', string> = {
+        upper: '상체',
+        lower: '하체',
+        core: '코어',
+      };
+
+      const base = sectionMap.get(bodyPart) ?? {
+        bodyPart,
+        label: labelMap[bodyPart],
+        totalSets: 0,
+        maxWeight: 0,
+      };
+
+      const setCount = exercise.sets.length;
+      const exerciseMaxWeight = exercise.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0);
+
+      base.totalSets = (base.totalSets ?? 0) + setCount;
+      base.maxWeight = Math.max(base.maxWeight ?? 0, exerciseMaxWeight);
+      sectionMap.set(bodyPart, base);
     });
   });
 
-  // 평균 중량과 최대 중량 계산
-  exerciseMap.forEach(exercise => {
-    if (exercise.type === 'weight' && exercise.totalWeight && exercise.totalSets > 0) {
-      exercise.avgWeight = Math.round(exercise.totalWeight / exercise.totalSets);
-      // 최대 중량은 실제로는 세트별 데이터에서 계산해야 하지만, 여기서는 임시로 평균의 1.2배로 설정
-      exercise.maxWeight = Math.round(exercise.avgWeight * 1.2);
-    }
-  });
-
-  // 칼로리 추정 (간단한 공식)
-  const estimateCaloriesBurned = (weight: number, cardioTime: number, totalTime: number): number => {
-    const weightCalories = weight * 0.1; // 중량당 0.1kcal
-    const cardioCalories = cardioTime * 0.5; // 분당 0.5kcal
-    const timeCalories = totalTime * 2; // 분당 2kcal (기본 활동)
-    return Math.round(weightCalories + cardioCalories + timeCalories);
-  };
+  const sectionOrder: WorkoutBodyPart[] = ['cardio', 'upper', 'lower', 'core'];
+  const sections = sectionOrder
+    .map(part => sectionMap.get(part))
+    .filter((section): section is WorkoutDetailSummarySection => {
+      if (!section) return false;
+      if (section.bodyPart === 'cardio') {
+        return (section.caloriesBurned ?? 0) > 0;
+      }
+      return (section.totalSets ?? 0) > 0;
+    });
 
   return {
-    date: targetDate,
-    totalSessions: dailySessions.length,
-    totalDuration,
-    totalExercises: exerciseMap.size,
-    totalSets,
-    totalWeight: totalWeight > 0 ? totalWeight : undefined,
-    totalCardioTime: totalCardioTime > 0 ? totalCardioTime : undefined,
-    estimatedCalories: estimateCaloriesBurned(totalWeight, totalCardioTime, totalDuration),
-    exercises: Array.from(exerciseMap.values())
+    todayBodyParts: sections.map(section => section.bodyPart),
+    sections,
   };
 };
 
 export const WorkoutSummary = ({ targetDate }: WorkoutSummaryProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [summary, setSummary] = useState<DailyWorkoutSummary | null>(null);
+  const [viewModel, setViewModel] = useState<WorkoutDetailSummaryViewModel | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // URL state에서 completionData를 가져와서 임시 저장소에 추가
   useEffect(() => {
     const completionData = location.state?.completionData;
     if (completionData) {
@@ -115,15 +129,11 @@ export const WorkoutSummary = ({ targetDate }: WorkoutSummaryProps) => {
     }
   }, [location.state]);
 
-  // 날짜별 운동 데이터 조회 및 집계
   useEffect(() => {
     const date = targetDate || new Date();
-    console.log('날짜별 운동 데이터 조회:', date.toDateString());
-    
-    const dailySummary = aggregateExercisesByDay(tempWorkoutSessions, date);
-    console.log('운동 데이터 집계 결과:', dailySummary);
-    
-    setSummary(dailySummary);
+    const nextViewModel = buildDetailViewModel(tempWorkoutSessions, date);
+    // 서버/세션 데이터가 없는 경우에도 상세 요약 화면이 비어 보이지 않도록 임시값 표시
+    setViewModel(nextViewModel.sections.length > 0 ? nextViewModel : DEFAULT_DETAIL_SUMMARY_VIEW_MODEL);
     setLoading(false);
   }, [targetDate]);
 
@@ -146,7 +156,7 @@ export const WorkoutSummary = ({ targetDate }: WorkoutSummaryProps) => {
     );
   }
 
-  if (!summary) {
+  if (!viewModel) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
@@ -159,14 +169,13 @@ export const WorkoutSummary = ({ targetDate }: WorkoutSummaryProps) => {
 
   return (
     <WorkoutSummaryView
-      summary={summary}
+      viewModel={viewModel}
       onGoBack={handleGoBack}
       onGoHome={handleGoHome}
     />
   );
 };
 
-// 임시 함수: 운동 세션 데이터 설정 (실제로는 전역 상태 관리나 API를 사용)
 export const setTempWorkoutSessions = (sessions: WorkoutCompletionData[]) => {
   tempWorkoutSessions = sessions;
-}; 
+};

@@ -1,21 +1,15 @@
-import { CelebrationMessage, WorkoutCompletionData, Achievement } from '../../types/exercise';
+import { WorkoutCompletionData } from '../../types/exercise';
 
 interface WorkoutCompleteViewProps {
   completionData: WorkoutCompletionData;
-  celebrationMessage: CelebrationMessage;
-  achievements?: Achievement[];
   onViewSummary: () => void;
-  onStartNewWorkout: () => void;
-  onGoHome: () => void;
+  onFinishWorkout: () => void;
 }
 
 export const WorkoutCompleteView = ({
   completionData,
-  celebrationMessage,
-  achievements = [],
   onViewSummary,
-  onStartNewWorkout,
-  onGoHome,
+  onFinishWorkout,
 }: WorkoutCompleteViewProps) => {
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -26,122 +20,50 @@ export const WorkoutCompleteView = ({
     return `${mins}분`;
   };
 
-  const formatWeight = (weight?: number) => {
-    if (!weight) return '0kg';
-    return `${weight}kg`;
-  };
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-md mx-auto space-y-8">
-        {/* 축하 메시지 섹션 */}
-        <div className="text-center space-y-4">
-          <div className="text-6xl animate-bounce">
-            {celebrationMessage.emoji}
-          </div>
-          <h1 className="text-2xl font-bold text-green-400">
-            {celebrationMessage.message}
-          </h1>
+    <div className="min-h-screen bg-gray-900 text-white px-6 py-8">
+      <div className="max-w-md mx-auto flex min-h-[calc(100vh-4rem)] flex-col">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-emerald-300">운동 끝!</h1>
         </div>
 
-        {/* 운동 요약 섹션 */}
-        <div className="bg-gray-800 rounded-lg p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-center text-blue-400">
-            오늘의 운동 요약
-          </h2>
-          
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="text-center">
-              <div className="text-gray-400">운동 시간</div>
-              <div className="text-xl font-bold text-white">
-                {formatDuration(completionData.duration)}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-gray-400">총 세트</div>
-              <div className="text-xl font-bold text-white">
-                {completionData.totalSets}세트
-              </div>
-            </div>
-            {completionData.totalWeight && completionData.totalWeight > 0 && (
-              <div className="text-center">
-                <div className="text-gray-400">총 중량</div>
-                <div className="text-xl font-bold text-white">
-                  {formatWeight(completionData.totalWeight)}
-                </div>
-              </div>
-            )}
-            {completionData.caloriesBurned && (
-              <div className="text-center">
-                <div className="text-gray-400">소모 칼로리</div>
-                <div className="text-xl font-bold text-white">
-                  {completionData.caloriesBurned}kcal
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="bg-gray-800 rounded-2xl p-6 space-y-6">
+          <section className="text-center" data-testid="workout-duration">
+            <p className="text-sm text-gray-400">운동 시간</p>
+            <p className="mt-1 text-2xl font-semibold text-white">{formatDuration(completionData.duration)}</p>
+          </section>
 
-          <div className="border-t border-gray-700 pt-4">
-            <h3 className="text-lg font-semibold mb-3 text-green-400">
-              완료한 운동
-            </h3>
-            <div className="space-y-2">
-              {completionData.exercises.map((exercise, index) => (
-                <div key={index} className="flex justify-between items-center bg-gray-700 rounded px-3 py-2">
-                  <span className="text-white">{exercise.exerciseName}</span>
-                  <span className="text-gray-300 text-sm">
-                    {exercise.sets.length}세트
-                  </span>
-                </div>
+          <section data-testid="completed-exercises">
+            <p className="text-sm text-gray-400 mb-3">완료한 운동</p>
+            <ul className="space-y-2">
+              {completionData.exercises.map((exercise) => (
+                <li
+                  key={`${exercise.exerciseId}-${exercise.exerciseName}`}
+                  className="rounded-lg bg-gray-700 px-4 py-3 text-white"
+                >
+                  {exercise.exerciseName}
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         </div>
 
-        {/* 성취 배지 섹션 */}
-        {achievements.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-center text-yellow-400 mb-4">
-              <span role="img" aria-label="트로피">🏆</span> 새로운 성취!
-            </h2>
-            <div className="space-y-3">
-              {achievements.map((achievement) => (
-                <div key={achievement.id} className="flex items-center space-x-3 bg-gray-700 rounded p-3">
-                  <span className="text-2xl" role="img" aria-label={achievement.title}>{achievement.icon}</span>
-                  <div>
-                    <div className="font-semibold text-white">{achievement.title}</div>
-                    <div className="text-sm text-gray-300">{achievement.description}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="mt-auto space-y-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-6">
+          <button
+            onClick={onFinishWorkout}
+            className="w-full rounded-2xl bg-emerald-400 px-6 py-4 text-lg font-semibold text-slate-950 transition-colors hover:bg-emerald-300"
+          >
+            운동 마치기
+          </button>
 
-        {/* 액션 버튼 섹션 */}
-        <div className="space-y-4">
           <button
             onClick={onViewSummary}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            className="w-full rounded-2xl bg-slate-100 px-6 py-4 text-lg font-semibold text-slate-900 transition-colors hover:bg-slate-200"
           >
             상세 요약 보기
-          </button>
-          
-          <button
-            onClick={onStartNewWorkout}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            추가 운동하기
-          </button>
-          
-          <button
-            onClick={onGoHome}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          >
-            홈으로 돌아가기
           </button>
         </div>
       </div>
     </div>
   );
-}; 
+};
