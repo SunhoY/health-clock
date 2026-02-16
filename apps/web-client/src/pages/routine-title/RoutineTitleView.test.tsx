@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { RoutineTitleView } from './RoutineTitleView';
 import { RoutineTitleForm } from '../../types/exercise';
 
-const mockForm: RoutineTitleForm = {
+const emptyForm: RoutineTitleForm = {
+  title: '',
+  isValid: false,
+  error: undefined
+};
+
+const validForm: RoutineTitleForm = {
   title: '테스트 루틴',
   isValid: true,
   error: undefined
@@ -18,53 +24,55 @@ describe('RoutineTitleView', () => {
     jest.clearAllMocks();
   });
 
-  it('모달이 올바르게 렌더링된다', () => {
+  it('다이얼로그가 올바르게 렌더링된다', () => {
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={emptyForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
+
     expect(screen.getByText('루틴 제목 입력')).toBeInTheDocument();
-    expect(screen.getByText('저장할 루틴의 제목을 입력해주세요')).toBeInTheDocument();
+    expect(screen.queryByText('저장할 루틴의 제목을 입력해주세요')).not.toBeInTheDocument();
     expect(screen.getByLabelText('루틴 제목')).toBeInTheDocument();
     expect(screen.getByText('취소')).toBeInTheDocument();
     expect(screen.getByText('저장')).toBeInTheDocument();
   });
 
-  it('기본 제목이 입력 필드에 표시된다', () => {
+  it('입력값이 비어 있으면 placeholder만 보인다', () => {
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={emptyForm}
+        titlePlaceholder="복합 루틴 (2월 16일)"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const input = screen.getByDisplayValue('테스트 루틴');
-    expect(input).toBeInTheDocument();
+
+    const input = screen.getByLabelText('루틴 제목') as HTMLInputElement;
+    expect(input.value).toBe('');
+    expect(input.placeholder).toBe('복합 루틴 (2월 16일)');
   });
 
   it('제목 변경 시 콜백이 호출된다', async () => {
     const user = userEvent.setup();
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={emptyForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const input = screen.getByLabelText('루틴 제목');
-    await user.clear(input);
-    await user.type(input, '새');
-    
-    expect(mockOnTitleChange).toHaveBeenCalledWith('테스트 루틴새');
+
+    await user.type(screen.getByLabelText('루틴 제목'), '새 루틴');
+
+    expect(mockOnTitleChange).toHaveBeenCalled();
   });
 
   it('유효하지 않은 입력 시 에러 메시지가 표시된다', () => {
@@ -73,16 +81,17 @@ describe('RoutineTitleView', () => {
       isValid: false,
       error: '제목을 입력해주세요'
     };
-    
+
     render(
       <RoutineTitleView
         form={formWithError}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
+
     expect(screen.getByText('제목을 입력해주세요')).toBeInTheDocument();
     expect(screen.getByText('저장')).toBeDisabled();
   });
@@ -91,16 +100,16 @@ describe('RoutineTitleView', () => {
     const user = userEvent.setup();
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={validForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const input = screen.getByLabelText('루틴 제목');
-    await user.type(input, '{Enter}');
-    
+
+    await user.type(screen.getByLabelText('루틴 제목'), '{Enter}');
+
     expect(mockOnSave).toHaveBeenCalled();
   });
 
@@ -108,16 +117,16 @@ describe('RoutineTitleView', () => {
     const user = userEvent.setup();
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={validForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const input = screen.getByLabelText('루틴 제목');
-    await user.type(input, '{Escape}');
-    
+
+    await user.type(screen.getByLabelText('루틴 제목'), '{Escape}');
+
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
@@ -125,16 +134,16 @@ describe('RoutineTitleView', () => {
     const user = userEvent.setup();
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={validForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const saveButton = screen.getByText('저장');
-    await user.click(saveButton);
-    
+
+    await user.click(screen.getByText('저장'));
+
     expect(mockOnSave).toHaveBeenCalled();
   });
 
@@ -142,87 +151,68 @@ describe('RoutineTitleView', () => {
     const user = userEvent.setup();
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={validForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const cancelButton = screen.getByText('취소');
-    await user.click(cancelButton);
-    
+
+    await user.click(screen.getByText('취소'));
+
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
   it('폼이 유효하지 않을 때 Enter 키로 저장이 호출되지 않는다', async () => {
     const user = userEvent.setup();
-    const invalidForm: RoutineTitleForm = {
-      title: '',
-      isValid: false,
-      error: '제목을 입력해주세요'
-    };
-    
     render(
       <RoutineTitleView
-        form={invalidForm}
+        form={emptyForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const input = screen.getByLabelText('루틴 제목');
-    await user.type(input, '{Enter}');
-    
+
+    await user.type(screen.getByLabelText('루틴 제목'), '{Enter}');
+
     expect(mockOnSave).not.toHaveBeenCalled();
   });
 
-  it('문자 수가 표시된다', () => {
-    render(
-      <RoutineTitleView
-        form={mockForm}
-        onTitleChange={mockOnTitleChange}
-        onSave={mockOnSave}
-        onCancel={mockOnCancel}
-      />
-    );
-    
-    expect(screen.getByText('6/50')).toBeInTheDocument();
-  });
-
-  it('모달 외부 클릭 시 취소가 호출된다', async () => {
+  it('다이얼로그 외부 클릭 시 취소가 호출된다', async () => {
     const user = userEvent.setup();
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={validForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
-    const backdrop = screen.getByRole('dialog');
-    await user.click(backdrop);
-    
+
+    await user.click(screen.getByRole('dialog'));
+
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
   it('접근성 속성이 올바르게 설정된다', () => {
     render(
       <RoutineTitleView
-        form={mockForm}
+        form={validForm}
+        titlePlaceholder="추천 루틴"
         onTitleChange={mockOnTitleChange}
         onSave={mockOnSave}
         onCancel={mockOnCancel}
       />
     );
-    
+
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveAttribute('aria-labelledby', 'routine-title-modal-title');
-    
-    const input = screen.getByLabelText('루틴 제목');
-    expect(input).toHaveAttribute('maxlength', '50');
+
+    expect(screen.getByLabelText('루틴 제목')).toBeInTheDocument();
   });
-}); 
+});

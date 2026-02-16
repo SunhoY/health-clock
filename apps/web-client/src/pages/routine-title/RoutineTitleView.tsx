@@ -3,6 +3,7 @@ import { RoutineTitleForm } from '../../types/exercise';
 
 interface RoutineTitleViewProps {
   form: RoutineTitleForm;
+  titlePlaceholder: string;
   onTitleChange: (title: string) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -10,6 +11,7 @@ interface RoutineTitleViewProps {
 
 export function RoutineTitleView({
   form,
+  titlePlaceholder,
   onTitleChange,
   onSave,
   onCancel
@@ -17,10 +19,9 @@ export function RoutineTitleView({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // 모달이 열릴 때 입력 필드에 포커스
+    // 다이얼로그가 열릴 때 입력 필드에 포커스
     if (inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select();
     }
   }, []);
 
@@ -53,30 +54,20 @@ export function RoutineTitleView({
         >
           루틴 제목 입력
         </h2>
-        
-        <p className="text-gray-400 mb-6">
-          저장할 루틴의 제목을 입력해주세요
-        </p>
 
         <div className="mb-6">
-          <label 
-            htmlFor="routine-title-input"
-            className="block text-sm font-medium text-gray-200 mb-2"
-          >
-            루틴 제목
-          </label>
           <input
             ref={inputRef}
             id="routine-title-input"
             type="text"
+            aria-label="루틴 제목"
             value={form.title}
             onChange={(e) => onTitleChange(e.target.value)}
             onKeyDown={handleKeyDown}
             className={`w-full px-4 py-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
               form.error ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder="루틴 제목을 입력하세요"
-            maxLength={50}
+            placeholder={titlePlaceholder}
             aria-describedby={form.error ? 'title-error' : undefined}
           />
           {form.error && (
@@ -88,9 +79,6 @@ export function RoutineTitleView({
               {form.error}
             </p>
           )}
-          <p className="text-gray-500 text-sm mt-2">
-            {form.title.length}/50
-          </p>
         </div>
 
         <div className="flex gap-3">

@@ -22,6 +22,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    titlePlaceholder: '루틴 이름을 입력하세요',
     form: {
       title: '테스트 루틴',
       isValid: true,
@@ -32,9 +33,10 @@ export const Default: Story = {
 
 export const WithDefaultTitle: Story = {
   args: {
+    titlePlaceholder: '가슴 루틴 (12월 15일)',
     form: {
-      title: '가슴 루틴 (12월 15일)',
-      isValid: true,
+      title: '',
+      isValid: false,
       error: undefined
     },
   },
@@ -42,6 +44,7 @@ export const WithDefaultTitle: Story = {
 
 export const WithError: Story = {
   args: {
+    titlePlaceholder: '루틴 이름을 입력하세요',
     form: {
       title: '',
       isValid: false,
@@ -52,6 +55,7 @@ export const WithError: Story = {
 
 export const EmptyState: Story = {
   args: {
+    titlePlaceholder: '복합 루틴 (12월 15일)',
     form: {
       title: '',
       isValid: false,

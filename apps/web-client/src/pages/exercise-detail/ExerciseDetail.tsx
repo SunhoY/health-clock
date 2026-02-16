@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExerciseDetailView } from './ExerciseDetailView';
-import { EXERCISES_DATA, FORM_CONFIG, Exercise, ExerciseDetail as ExerciseDetailModel } from '../../types/exercise';
-import { appendTempRoutineData } from '../routine-title/RoutineTitle';
+import { EXERCISES_DATA, FORM_CONFIG, Exercise, ExerciseDetail as ExerciseDetailModel, RoutineTitleForm } from '../../types/exercise';
+import { RoutineTitleView } from '../routine-title/RoutineTitleView';
+import { appendTempRoutineData, getTempRoutineData } from '../routine-title/RoutineTitle';
 
 interface StrengthSetInput {
   setNumber: number;
@@ -99,6 +100,13 @@ export function ExerciseDetail() {
   const [setCount, setSetCount] = useState(FORM_CONFIG.sets.default);
   const [strengthSets, setStrengthSets] = useState<StrengthSetInput[]>(createStrengthSets(FORM_CONFIG.sets.default));
   const [durationInput, setDurationInput] = useState(String(FORM_CONFIG.duration.default));
+  const [isTitleDialogOpen, setIsTitleDialogOpen] = useState(false);
+  const [pendingCompleteExercise, setPendingCompleteExercise] = useState<ExerciseDetailModel | null>(null);
+  const [titleForm, setTitleForm] = useState<RoutineTitleForm>({
+    title: '',
+    isValid: false,
+    error: undefined
+  });
 
   useEffect(() => {
     if (!bodyPart || !exerciseId) {
@@ -250,21 +258,67 @@ export function ExerciseDetail() {
     };
   };
 
+  const validateTitle = (title: string): RoutineTitleForm => {
+    const trimmed = title.trim();
+    const error = trimmed.length === 0 ? '제목을 입력해주세요' : undefined;
+
+    return {
+      title,
+      isValid: !error,
+      error
+    };
+  };
+
+  const openTitleDialog = () => {
+    const detail = buildExerciseDetail();
+    if (!detail) {
+      return;
+    }
+
+    setPendingCompleteExercise(detail);
+    setTitleForm(validateTitle(''));
+    setIsTitleDialogOpen(true);
+  };
+
+  const handleTitleChange = (title: string) => {
+    setTitleForm(validateTitle(title));
+  };
+
+  const handleDialogCancel = () => {
+    setIsTitleDialogOpen(false);
+    setPendingCompleteExercise(null);
+  };
+
+  const handleDialogSave = () => {
+    if (!pendingCompleteExercise || !titleForm.isValid) {
+      return;
+    }
+
+    appendTempRoutineData(pendingCompleteExercise);
+    const savePayload = {
+      title: titleForm.title.trim(),
+      exercises: getTempRoutineData(),
+      createdAt: new Date()
+    };
+
+    console.log('루틴 저장:', savePayload);
+    navigate('/preset-selection');
+  };
+
   const saveCurrentExercise = (mode: 'add' | 'complete') => {
+    if (mode === 'complete') {
+      openTitleDialog();
+      return;
+    }
+
     const detail = buildExerciseDetail();
     if (!detail) {
       return;
     }
 
     appendTempRoutineData(detail);
-    console.log(mode === 'add' ? '운동 추가:' : '루틴 완료:', detail);
-
-    if (mode === 'add') {
-      navigate(`/exercise-selection/${bodyPart ?? detail.bodyPart}`);
-      return;
-    }
-
-    navigate('/routine-title');
+    console.log('운동 추가:', detail);
+    navigate(`/exercise-selection/${bodyPart ?? detail.bodyPart}`);
   };
 
   if (!exercise) {
@@ -279,22 +333,33 @@ export function ExerciseDetail() {
   }
 
   return (
-    <ExerciseDetailView
-      exercise={exercise}
-      isCardio={isCardio}
-      setCount={setCount}
-      setRange={FORM_CONFIG.sets}
-      strengthSets={strengthSets}
-      strengthErrors={strengthErrors}
-      durationInput={durationInput}
-      durationError={durationError}
-      isFormValid={isFormValid}
-      onSetCountChange={handleSetCountChange}
-      onStrengthSetChange={handleStrengthSetChange}
-      onStrengthSetStepChange={handleStrengthSetStepChange}
-      onDurationInputChange={setDurationInput}
-      onAddExercise={() => saveCurrentExercise('add')}
-      onCompleteRoutine={() => saveCurrentExercise('complete')}
-    />
+    <>
+      <ExerciseDetailView
+        exercise={exercise}
+        isCardio={isCardio}
+        setCount={setCount}
+        setRange={FORM_CONFIG.sets}
+        strengthSets={strengthSets}
+        strengthErrors={strengthErrors}
+        durationInput={durationInput}
+        durationError={durationError}
+        isFormValid={isFormValid}
+        onSetCountChange={handleSetCountChange}
+        onStrengthSetChange={handleStrengthSetChange}
+        onStrengthSetStepChange={handleStrengthSetStepChange}
+        onDurationInputChange={setDurationInput}
+        onAddExercise={() => saveCurrentExercise('add')}
+        onCompleteRoutine={() => saveCurrentExercise('complete')}
+      />
+      {isTitleDialogOpen && (
+        <RoutineTitleView
+          form={titleForm}
+          titlePlaceholder="저장할 루틴의 제목을 입력해주세요"
+          onTitleChange={handleTitleChange}
+          onSave={handleDialogSave}
+          onCancel={handleDialogCancel}
+        />
+      )}
+    </>
   );
 }

@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoutineTitleView } from './RoutineTitleView';
 import { 
-  RoutineTitleForm, 
-  VALIDATION_RULES, 
-  generateDefaultTitle,
+  RoutineTitleForm,
   ExerciseDetail 
 } from '../../types/exercise';
 
@@ -13,40 +11,18 @@ let tempRoutineData: ExerciseDetail[] = [];
 
 export function RoutineTitle() {
   const navigate = useNavigate();
+  const titlePlaceholder = '저장할 루틴의 제목을 입력해주세요';
   const [form, setForm] = useState<RoutineTitleForm>({
     title: '',
     isValid: false,
     error: undefined
   });
 
-  useEffect(() => {
-    // 기본 제목 생성
-    const defaultTitle = generateDefaultTitle(getTempRoutineData());
-    const initialForm = validateTitle(defaultTitle);
-    setForm(initialForm);
-  }, []);
-
   const validateTitle = (title: string): RoutineTitleForm => {
-    const rules = VALIDATION_RULES.title;
     let error: string | undefined;
 
-    // 최소 길이 검증
-    if (title.length < rules.minLength) {
+    if (title.trim().length === 0) {
       error = '제목을 입력해주세요';
-    }
-    // 최대 길이 검증
-    else if (title.length > rules.maxLength) {
-      error = `제목은 ${rules.maxLength}자 이하여야 합니다`;
-    }
-    // 패턴 검증
-    else if (rules.pattern && !rules.pattern.test(title)) {
-      error = '제목에는 한글, 영문, 숫자, 공백, 하이픈, 언더스코어만 사용할 수 있습니다';
-    }
-    // 금지어 검증
-    else if (rules.forbiddenWords && rules.forbiddenWords.some(word => 
-      title.toLowerCase().includes(word.toLowerCase())
-    )) {
-      error = '사용할 수 없는 단어가 포함되어 있습니다';
     }
 
     return {
@@ -79,13 +55,14 @@ export function RoutineTitle() {
   };
 
   const handleCancel = () => {
-    // 취소 시 프리셋 선택 화면으로 이동
-    navigate('/preset-selection');
+    // 취소 시 이전 단계(S-05)로 복귀
+    navigate(-1);
   };
 
   return (
     <RoutineTitleView
       form={form}
+      titlePlaceholder={titlePlaceholder}
       onTitleChange={handleTitleChange}
       onSave={handleSave}
       onCancel={handleCancel}

@@ -81,14 +81,29 @@ describe('ExerciseDetail', () => {
     expect(screen.getByText('운동을 찾을 수 없습니다')).toBeInTheDocument();
   });
 
-  it('1세트 입력 시 미입력 세트는 자동 채움되어 저장된다', async () => {
+  it('완료 클릭 시 현재 화면 위에 제목 다이얼로그가 열린다', async () => {
     const user = userEvent.setup();
     renderWithRoute('/exercise-detail/chest/bench-press');
 
     await fillSetInput(user, 0, '20', '10');
     await user.click(screen.getByText('완료'));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/routine-title');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('루틴 제목')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('저장할 루틴의 제목을 입력해주세요')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith('/routine-title');
+  });
+
+  it('다이얼로그 저장 시 루틴 저장 후 프리셋 선택으로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await fillSetInput(user, 0, '20', '10');
+    await user.click(screen.getByText('완료'));
+    await user.type(screen.getByLabelText('루틴 제목'), '오늘 루틴');
+    await user.click(screen.getByText('저장'));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
 
     const draft = getTempRoutineData();
     expect(draft).toHaveLength(1);
@@ -106,6 +121,8 @@ describe('ExerciseDetail', () => {
     await fillSetInput(user, 1, '30', '8');
     await fillSetInput(user, 0, '20', '10');
     await user.click(screen.getByText('완료'));
+    await user.type(screen.getByLabelText('루틴 제목'), '완료 루틴');
+    await user.click(screen.getByText('저장'));
 
     const draft = getTempRoutineData();
     expect(draft).toHaveLength(1);
@@ -134,6 +151,8 @@ describe('ExerciseDetail', () => {
     await user.click(screen.getByRole('button', { name: '1세트 중량 증가' }));
     await user.click(screen.getByRole('button', { name: '1세트 횟수 증가' }));
     await user.click(screen.getByText('완료'));
+    await user.type(screen.getByLabelText('루틴 제목'), '증감 테스트');
+    await user.click(screen.getByText('저장'));
 
     const draft = getTempRoutineData();
     expect(draft).toHaveLength(1);
