@@ -32,13 +32,10 @@ export const PresetSelectionView = ({
   onEditPreset,
   onDeletePreset
 }: PresetSelectionViewProps) => {
-  const LONG_PRESS_DELAY_MS = 300;
-  const LONG_PRESS_FILL_MS = 500;
+  const LONG_PRESS_MS = 700;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [openMenuPresetId, setOpenMenuPresetId] = useState<string | null>(null);
-  const [longPressActivePresetId, setLongPressActivePresetId] = useState<string | null>(null);
-  const longPressDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredPresetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -56,35 +53,25 @@ export const PresetSelectionView = ({
   }, []);
 
   const startLongPress = (presetId: string) => {
-    if (longPressDelayTimerRef.current) {
-      clearTimeout(longPressDelayTimerRef.current);
-    }
-    if (longPressCompleteTimerRef.current) {
-      clearTimeout(longPressCompleteTimerRef.current);
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
     }
 
-    setLongPressActivePresetId(null);
     longPressTriggeredPresetIdRef.current = null;
 
-    longPressDelayTimerRef.current = setTimeout(() => {
-      setLongPressActivePresetId(presetId);
-      longPressCompleteTimerRef.current = setTimeout(() => {
-        setLongPressActivePresetId(null);
-        setOpenMenuPresetId(presetId);
-        longPressTriggeredPresetIdRef.current = presetId;
-      }, LONG_PRESS_FILL_MS);
-    }, LONG_PRESS_DELAY_MS);
+    longPressTimerRef.current = setTimeout(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      setOpenMenuPresetId(presetId);
+      longPressTriggeredPresetIdRef.current = presetId;
+    }, LONG_PRESS_MS);
   };
 
   const clearLongPress = () => {
-    setLongPressActivePresetId(null);
-    if (longPressDelayTimerRef.current) {
-      clearTimeout(longPressDelayTimerRef.current);
-      longPressDelayTimerRef.current = null;
-    }
-    if (longPressCompleteTimerRef.current) {
-      clearTimeout(longPressCompleteTimerRef.current);
-      longPressCompleteTimerRef.current = null;
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
   };
 
@@ -156,16 +143,8 @@ export const PresetSelectionView = ({
                 onTouchCancel={clearLongPress}
                 onContextMenu={(event) => event.preventDefault()}
                 aria-label={`${preset.title} 선택`}
-                className="relative flex w-full select-none items-center justify-between overflow-hidden rounded-xl border border-gray-700 bg-gray-800 px-5 py-4 pr-16 text-left transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-300 [-webkit-touch-callout:none]"
+                className="relative flex w-full select-none items-center justify-between overflow-hidden rounded-xl border border-gray-700 bg-gray-800 px-5 py-4 pr-16 text-left transition-colors hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 [-webkit-touch-callout:none]"
               >
-                <span
-                  aria-hidden="true"
-                  className={`pointer-events-none absolute inset-y-0 left-0 bg-cyan-400/20 ${
-                    longPressActivePresetId === preset.id
-                      ? 'w-full transition-all duration-[500ms] ease-linear'
-                      : 'w-0 transition-none'
-                  }`}
-                />
                 <div>
                   <h3 className="text-lg font-semibold text-white">{preset.title}</h3>
                   <p className="mt-1 text-sm text-gray-400">{preset.exercises.length}개 운동</p>

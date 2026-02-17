@@ -115,11 +115,11 @@ describe('PresetSelectionView', () => {
     const card = screen.getByRole('button', { name: '전신 운동 선택' });
     fireEvent.mouseDown(card);
     await act(async () => {
-      jest.advanceTimersByTime(300);
+      jest.advanceTimersByTime(650);
     });
     expect(screen.queryByRole('dialog', { name: '루틴 관리 메뉴' })).not.toBeInTheDocument();
     await act(async () => {
-      jest.advanceTimersByTime(550);
+      jest.advanceTimersByTime(60);
     });
     fireEvent.mouseUp(card);
 
