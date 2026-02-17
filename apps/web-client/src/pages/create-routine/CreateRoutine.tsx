@@ -9,7 +9,7 @@ export const CreateRoutine = () => {
   const routeState =
     (location.state as
       | {
-          mode?: 'create' | 'edit';
+          mode?: 'create' | 'edit' | 'edit-add';
           presetId?: string;
         }
       | null) ?? null;
@@ -47,6 +47,16 @@ export const CreateRoutine = () => {
   }, [loadBodyParts, navigate, routeState?.mode, routeState?.presetId]);
 
   const handleBodyPartSelect = (bodyPartId: string) => {
+    if (routeState?.mode === 'edit-add' && routeState.presetId) {
+      navigate(`/exercise-selection/${bodyPartId}`, {
+        state: {
+          mode: 'edit-add',
+          presetId: routeState.presetId
+        }
+      });
+      return;
+    }
+
     navigate(`/exercise-selection/${bodyPartId}`);
   };
 

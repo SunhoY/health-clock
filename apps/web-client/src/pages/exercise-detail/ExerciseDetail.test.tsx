@@ -20,7 +20,11 @@ jest.mock('react-router-dom', () => ({
 
 const renderWithRoute = (
   route: string,
-  state?: { mode?: 'create' | 'edit'; presetId?: string; presetExercise?: { id: string; name: string; part: string } }
+  state?: {
+    mode?: 'create' | 'edit' | 'edit-add';
+    presetId?: string;
+    presetExercise?: { id: string; name: string; part: string; exerciseCode?: string };
+  }
 ) => {
   return render(
     <MemoryRouter initialEntries={[state ? { pathname: route, state } : route]}>
@@ -275,7 +279,9 @@ describe('ExerciseDetail', () => {
 
   it('편집 모드 완료 시 updatePresetExercise API를 호출한다', async () => {
     const user = userEvent.setup();
-    const updateSpy = jest.spyOn(presetApi, 'updatePresetExercise');
+    const updateSpy = jest
+      .spyOn(presetApi, 'updatePresetExercise')
+      .mockResolvedValue(undefined);
 
     renderWithRoute('/exercise-detail/chest/bench-press', {
       mode: 'edit',
@@ -294,8 +300,39 @@ describe('ExerciseDetail', () => {
 
     expect(updateSpy).toHaveBeenCalledWith(
       '2',
+      'bench-press',
       expect.objectContaining({
         exerciseName: '벤치프레스'
+      })
+    );
+    expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
+  });
+
+  it('편집 추가 모드 완료 시 appendPresetExercise API를 호출한다', async () => {
+    const user = userEvent.setup();
+    const appendSpy = jest
+      .spyOn(presetApi, 'appendPresetExercise')
+      .mockResolvedValue({ id: 'routine-exercise-2' });
+
+    renderWithRoute('/exercise-detail/chest/push-up', {
+      mode: 'edit-add',
+      presetId: '2',
+      presetExercise: {
+        id: 'tmp-id',
+        name: '푸쉬업',
+        part: 'chest',
+        exerciseCode: 'push-up'
+      }
+    });
+
+    await fillSetInput(user, 0, '20', '10');
+    await user.click(screen.getByText('완료'));
+
+    expect(appendSpy).toHaveBeenCalledWith(
+      '2',
+      expect.objectContaining({
+        exerciseId: 'push-up',
+        exerciseName: '푸쉬업'
       })
     );
     expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');

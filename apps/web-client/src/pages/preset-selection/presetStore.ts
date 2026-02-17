@@ -2,6 +2,7 @@ import { ExerciseDetail, StrengthExerciseSetViewModel } from '../../types/exerci
 
 export interface PresetExercise {
   id: string;
+  exerciseCode?: string;
   part: string;
   name: string;
   sets: number;
@@ -122,6 +123,7 @@ let localPresets: PresetItem[] = [...INITIAL_PRESETS];
 
 const toPresetExercise = (exercise: ExerciseDetail, index: number): PresetExercise => ({
   id: `${exercise.exerciseId}-${index + 1}`,
+  exerciseCode: exercise.exerciseId,
   part: exercise.bodyPart,
   name: exercise.exerciseName,
   sets: exercise.sets,
@@ -176,6 +178,7 @@ export const updateLocalPresetExercise = (
 
   const nextExercise: PresetExercise = {
     ...targetPreset.exercises[exerciseIndex],
+    exerciseCode: exercise.exerciseId,
     part: exercise.bodyPart,
     name: exercise.exerciseName,
     sets: exercise.sets,

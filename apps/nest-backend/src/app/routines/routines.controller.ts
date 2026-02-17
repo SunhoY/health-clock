@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   UseGuards
 } from '@nestjs/common';
@@ -16,6 +17,10 @@ import {
   CreateRoutineResponseDto
 } from './dto/create-routine.dto';
 import { RoutineSummaryDto } from './dto/routine-summary.dto';
+import {
+  AppendRoutineExerciseResponseDto,
+  UpsertRoutineExerciseRequestDto
+} from './dto/upsert-routine-exercise.dto';
 import { RoutinesService } from './routines.service';
 
 @Controller('routines')
@@ -58,6 +63,35 @@ export class RoutinesController {
       routineId,
       routineExerciseId,
       user.id
+    );
+  }
+
+  @Patch(':routineId/exercises/:routineExerciseId')
+  @HttpCode(204)
+  async updateRoutineExercise(
+    @Param('routineId') routineId: string,
+    @Param('routineExerciseId') routineExerciseId: string,
+    @Body() payload: UpsertRoutineExerciseRequestDto,
+    @CurrentUser() user: AuthenticatedUser
+  ): Promise<void> {
+    await this.routinesService.updateRoutineExerciseByUserId(
+      routineId,
+      routineExerciseId,
+      user.id,
+      payload
+    );
+  }
+
+  @Post(':routineId/exercises')
+  async appendRoutineExercise(
+    @Param('routineId') routineId: string,
+    @Body() payload: UpsertRoutineExerciseRequestDto,
+    @CurrentUser() user: AuthenticatedUser
+  ): Promise<AppendRoutineExerciseResponseDto> {
+    return this.routinesService.appendRoutineExerciseByUserId(
+      routineId,
+      user.id,
+      payload
     );
   }
 }

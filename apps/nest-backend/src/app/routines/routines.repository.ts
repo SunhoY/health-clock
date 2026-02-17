@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 interface RoutineExerciseRow {
   id: string;
+  exerciseCode: string;
   part: string;
   name: string;
   sets: number;
@@ -55,6 +56,10 @@ interface RoutineCreatedRow {
   lastUsedAt: Date | null;
 }
 
+interface RoutineExerciseCreatedRow {
+  id: string;
+}
+
 @Injectable()
 export class RoutinesRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -102,6 +107,7 @@ export class RoutinesRepository {
       const exercises: RoutineExerciseRow[] = routine.routineExercises.map(
         (routineExercise) => ({
           id: routineExercise.id,
+          exerciseCode: routineExercise.exercise.code,
           part: routineExercise.exercise.bodyPart,
           name: routineExercise.exercise.name,
           sets: Math.max(1, routineExercise.targetSets ?? 1),
@@ -171,6 +177,130 @@ export class RoutinesRepository {
         createdAt: routine.createdAt,
         lastUsedAt: routine.lastUsedAt
       };
+    });
+  }
+
+  async appendExerciseByRoutineIdAndUserId(
+    routineId: string,
+    userId: string,
+    row: RoutineExerciseCreateRow
+  ): Promise<RoutineExerciseCreatedRow | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const routine = await tx.routine.findFirst({
+        where: {
+          id: routineId,
+          userId
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (!routine) {
+        return null;
+      }
+
+      const aggregate = await tx.routineExercise.aggregate({
+        where: {
+          routineId
+        },
+        _max: {
+          orderNo: true
+        }
+      });
+      const orderNo = (aggregate._max.orderNo ?? 0) + 1;
+
+      const routineExercise = await tx.routineExercise.create({
+        data: {
+          routineId,
+          exerciseId: row.exerciseId,
+          orderNo,
+          metricType: row.metricType,
+          targetSets: row.targetSets,
+          targetReps: row.targetReps,
+          targetWeightKg: row.targetWeightKg,
+          targetDurationSeconds: row.targetDurationSeconds,
+          restSeconds: row.restSeconds,
+          updatedAt: new Date()
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (row.setDetails.length > 0) {
+        await tx.routineExerciseSet.createMany({
+          data: row.setDetails.map((setDetail) => ({
+            routineExerciseId: routineExercise.id,
+            setNo: setDetail.setNo,
+            targetWeightKg: setDetail.targetWeightKg,
+            targetReps: setDetail.targetReps
+          }))
+        });
+      }
+
+      return routineExercise;
+    });
+  }
+
+  async updateExerciseByRoutineIdAndExerciseIdAndUserId(
+    routineId: string,
+    routineExerciseId: string,
+    userId: string,
+    row: RoutineExerciseCreateRow
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const target = await tx.routineExercise.findFirst({
+        where: {
+          id: routineExerciseId,
+          routineId,
+          routine: {
+            userId
+          }
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (!target) {
+        return false;
+      }
+
+      await tx.routineExercise.update({
+        where: {
+          id: target.id
+        },
+        data: {
+          exerciseId: row.exerciseId,
+          metricType: row.metricType,
+          targetSets: row.targetSets,
+          targetReps: row.targetReps,
+          targetWeightKg: row.targetWeightKg,
+          targetDurationSeconds: row.targetDurationSeconds,
+          restSeconds: row.restSeconds,
+          updatedAt: new Date()
+        }
+      });
+
+      await tx.routineExerciseSet.deleteMany({
+        where: {
+          routineExerciseId: target.id
+        }
+      });
+
+      if (row.setDetails.length > 0) {
+        await tx.routineExerciseSet.createMany({
+          data: row.setDetails.map((setDetail) => ({
+            routineExerciseId: target.id,
+            setNo: setDetail.setNo,
+            targetWeightKg: setDetail.targetWeightKg,
+            targetReps: setDetail.targetReps
+          }))
+        });
+      }
+
+      return true;
     });
   }
 

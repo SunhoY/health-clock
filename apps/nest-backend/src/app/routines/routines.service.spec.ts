@@ -16,6 +16,8 @@ describe('RoutinesService', () => {
         createdAt: new Date('2026-02-17T10:00:00.000Z'),
         lastUsedAt: null
       }),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
@@ -74,11 +76,115 @@ describe('RoutinesService', () => {
     });
   });
 
+  it('should append routine exercise for the authenticated user', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn().mockResolvedValue([
+        { id: 'exercise-2', code: 'lat-pulldown' }
+      ]),
+      createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn().mockResolvedValue({
+        id: 'routine-exercise-2'
+      }),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+    const result = await service.appendRoutineExerciseByUserId(
+      'routine-1',
+      'user-1',
+      {
+        exerciseId: 'lat-pulldown',
+        exerciseName: '렛풀다운',
+        bodyPart: 'back',
+        sets: 4,
+        reps: 10,
+        weight: 50
+      }
+    );
+
+    expect(
+      routinesRepository.appendExerciseByRoutineIdAndUserId
+    ).toHaveBeenCalledWith('routine-1', 'user-1', {
+      exerciseId: 'exercise-2',
+      metricType: 'set_based',
+      targetSets: 4,
+      targetReps: 10,
+      targetWeightKg: 50,
+      targetDurationSeconds: undefined,
+      restSeconds: 60,
+      setDetails: [
+        { setNo: 1, targetWeightKg: 50, targetReps: 10 },
+        { setNo: 2, targetWeightKg: 50, targetReps: 10 },
+        { setNo: 3, targetWeightKg: 50, targetReps: 10 },
+        { setNo: 4, targetWeightKg: 50, targetReps: 10 }
+      ]
+    });
+    expect(result).toEqual({
+      id: 'routine-exercise-2'
+    });
+  });
+
+  it('should update routine exercise for the authenticated user', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn().mockResolvedValue([
+        { id: 'exercise-1', code: 'bench-press' }
+      ]),
+      createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest
+        .fn()
+        .mockResolvedValue(true),
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+    await service.updateRoutineExerciseByUserId(
+      'routine-1',
+      'routine-exercise-1',
+      'user-1',
+      {
+        exerciseId: 'bench-press',
+        exerciseName: '벤치프레스',
+        bodyPart: 'chest',
+        sets: 4,
+        reps: 8,
+        weight: 85
+      }
+    );
+
+    expect(
+      routinesRepository.updateExerciseByRoutineIdAndExerciseIdAndUserId
+    ).toHaveBeenCalledWith('routine-1', 'routine-exercise-1', 'user-1', {
+      exerciseId: 'exercise-1',
+      metricType: 'set_based',
+      targetSets: 4,
+      targetReps: 8,
+      targetWeightKg: 85,
+      targetDurationSeconds: undefined,
+      restSeconds: 60,
+      setDetails: [
+        { setNo: 1, targetWeightKg: 85, targetReps: 8 },
+        { setNo: 2, targetWeightKg: 85, targetReps: 8 },
+        { setNo: 3, targetWeightKg: 85, targetReps: 8 },
+        { setNo: 4, targetWeightKg: 85, targetReps: 8 }
+      ]
+    });
+  });
+
   it('should reject routine creation when exercise code is unknown', async () => {
     const routinesRepository = {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn().mockResolvedValue([]),
       createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
@@ -108,6 +214,8 @@ describe('RoutinesService', () => {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn().mockResolvedValue(true),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
@@ -127,6 +235,8 @@ describe('RoutinesService', () => {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest
         .fn()
@@ -151,6 +261,8 @@ describe('RoutinesService', () => {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest
         .fn()
@@ -176,6 +288,8 @@ describe('RoutinesService', () => {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest
         .fn()
@@ -206,6 +320,7 @@ describe('RoutinesService', () => {
           exercises: [
             {
               id: 'routine-exercise-1',
+              exerciseCode: 'bench-press',
               part: 'chest',
               name: '벤치프레스',
               sets: 4,
@@ -220,6 +335,8 @@ describe('RoutinesService', () => {
       ]),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
+      appendExerciseByRoutineIdAndUserId: jest.fn(),
+      updateExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
       deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
@@ -237,6 +354,7 @@ describe('RoutinesService', () => {
         exercises: [
           {
             id: 'routine-exercise-1',
+            exerciseCode: 'bench-press',
             part: 'chest',
             name: '벤치프레스',
             sets: 4,

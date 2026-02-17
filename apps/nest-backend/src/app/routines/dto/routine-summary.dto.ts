@@ -1,5 +1,6 @@
 export interface RoutineExerciseSummaryDto {
   id: string;
+  exerciseCode?: string;
   part: string;
   name: string;
   sets: number;

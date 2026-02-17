@@ -5,8 +5,7 @@ import {
   getLocalPresetById,
   getLocalPresets,
   PresetItem,
-  replaceLocalPresets,
-  updateLocalPresetExercise
+  replaceLocalPresets
 } from './presetStore';
 
 const AUTH_STORAGE_KEY = 'health-clock.google-auth';
@@ -18,6 +17,7 @@ interface StoredAuthSession {
 
 interface RoutineExerciseApiResponse {
   id: string;
+  exerciseCode?: string;
   part: string;
   name: string;
   sets: number;
@@ -40,6 +40,10 @@ interface CreateRoutineResponse {
   exerciseCount: number;
   createdAt: string;
   lastUsedAt: string | null;
+}
+
+interface AppendRoutineExerciseResponse {
+  id: string;
 }
 
 const readAuthSession = (): StoredAuthSession | null => {
@@ -97,6 +101,7 @@ const toPresetItem = (routine: RoutineApiResponse): PresetItem => ({
   title: routine.title,
   exercises: (routine.exercises ?? []).map((exercise) => ({
     id: exercise.id,
+    exerciseCode: exercise.exerciseCode ?? exercise.id,
     part: exercise.part,
     name: exercise.name,
     sets: Math.max(1, Math.trunc(toFiniteNumber(exercise.sets) ?? 1)),
@@ -211,9 +216,54 @@ export const fetchPresetById = async (presetId: string): Promise<PresetItem | un
 
 export const updatePresetExercise = async (
   presetId: string,
+  routineExerciseId: string,
   exercise: ExerciseDetail
 ): Promise<PresetItem | undefined> => {
-  return updateLocalPresetExercise(presetId, exercise);
+  const response = await fetch(
+    `/api/routines/${encodeURIComponent(presetId)}/exercises/${encodeURIComponent(routineExerciseId)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: buildAuthorizationHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(toCreateRoutineRequestExercise(exercise))
+    }
+  );
+
+  if (!response.ok) {
+    const reason = await tryReadMessage(response);
+    throw new Error(reason || '운동 수정 요청에 실패했습니다.');
+  }
+
+  const presets = await fetchPresets();
+  return presets.find((preset) => preset.id === presetId);
+};
+
+export const appendPresetExercise = async (
+  presetId: string,
+  exercise: ExerciseDetail
+): Promise<AppendRoutineExerciseResponse> => {
+  const response = await fetch(
+    `/api/routines/${encodeURIComponent(presetId)}/exercises`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: buildAuthorizationHeader(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(toCreateRoutineRequestExercise(exercise))
+    }
+  );
+
+  if (!response.ok) {
+    const reason = await tryReadMessage(response);
+    throw new Error(reason || '운동 추가 요청에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as AppendRoutineExerciseResponse;
+  await fetchPresets();
+  return payload;
 };
 
 export const deletePresetExercise = async (

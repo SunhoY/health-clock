@@ -34,6 +34,7 @@ const renderWithRouter = (
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/exercise-selection/:bodyPart?" element={<ExerciseSelection />} />
+        <Route path="/create-routine" element={<div>create-routine-page</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -121,7 +122,30 @@ describe('ExerciseSelection', () => {
     expect(
       screen.getByRole('button', { name: '벤치프레스 관리 메뉴' })
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '새 운동 추가하기' })).toBeInTheDocument();
     expect(fetchExercisesByBodyPartSpy).not.toHaveBeenCalled();
+  });
+
+  it('편집 모드에서 새 운동 추가하기 클릭 시 부위 선택 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderWithRouter({
+      pathname: '/exercise-selection/edit',
+      state: { mode: 'edit', presetId: '2' }
+    });
+
+    await user.click(await screen.findByRole('button', { name: '새 운동 추가하기' }));
+    expect(await screen.findByText('create-routine-page')).toBeInTheDocument();
+  });
+
+  it('edit-add 모드에서는 기존 루틴 운동을 제외한 목록만 표시한다', async () => {
+    renderWithRouter({
+      pathname: '/exercise-selection/chest',
+      state: { mode: 'edit-add', presetId: '2' }
+    });
+
+    expect(screen.getByText('추가할 운동 선택')).toBeInTheDocument();
+    expect(await screen.findByText('푸쉬업')).toBeInTheDocument();
+    expect(screen.queryByText('벤치프레스')).not.toBeInTheDocument();
   });
 
   it('편집 모드에서 운동 삭제를 선택하면 목록에서 제거된다', async () => {

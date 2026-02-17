@@ -12,6 +12,8 @@ describe('RoutinesController', () => {
         createdAt: '2026-02-17T10:00:00.000Z',
         lastUsedAt: null
       }),
+      appendRoutineExerciseByUserId: jest.fn(),
+      updateRoutineExerciseByUserId: jest.fn(),
       deleteRoutineByUserId: jest.fn(),
       deleteRoutineExerciseByUserId: jest.fn()
     } as unknown as RoutinesService;
@@ -64,6 +66,8 @@ describe('RoutinesController', () => {
     const routinesService = {
       getRoutineSummariesByUserId: jest.fn(),
       createRoutineByUserId: jest.fn(),
+      appendRoutineExerciseByUserId: jest.fn(),
+      updateRoutineExerciseByUserId: jest.fn(),
       deleteRoutineByUserId: jest.fn().mockResolvedValue(undefined),
       deleteRoutineExerciseByUserId: jest.fn().mockResolvedValue(undefined)
     } as unknown as RoutinesService;
@@ -85,6 +89,8 @@ describe('RoutinesController', () => {
     const routinesService = {
       getRoutineSummariesByUserId: jest.fn(),
       createRoutineByUserId: jest.fn(),
+      appendRoutineExerciseByUserId: jest.fn(),
+      updateRoutineExerciseByUserId: jest.fn(),
       deleteRoutineByUserId: jest.fn(),
       deleteRoutineExerciseByUserId: jest.fn().mockResolvedValue(undefined)
     } as unknown as RoutinesService;
@@ -123,6 +129,8 @@ describe('RoutinesController', () => {
         }
       ]),
       createRoutineByUserId: jest.fn(),
+      appendRoutineExerciseByUserId: jest.fn(),
+      updateRoutineExerciseByUserId: jest.fn(),
       deleteRoutineByUserId: jest.fn(),
       deleteRoutineExerciseByUserId: jest.fn()
     } as unknown as RoutinesService;
@@ -152,5 +160,86 @@ describe('RoutinesController', () => {
         lastUsedAt: null
       }
     ]);
+  });
+
+  it('should update routine exercise by current user id', async () => {
+    const routinesService = {
+      getRoutineSummariesByUserId: jest.fn(),
+      createRoutineByUserId: jest.fn(),
+      appendRoutineExerciseByUserId: jest.fn(),
+      updateRoutineExerciseByUserId: jest.fn().mockResolvedValue(undefined),
+      deleteRoutineByUserId: jest.fn(),
+      deleteRoutineExerciseByUserId: jest.fn()
+    } as unknown as RoutinesService;
+
+    const controller = new RoutinesController(routinesService);
+    await controller.updateRoutineExercise(
+      'routine-1',
+      'routine-exercise-1',
+      {
+        exerciseId: 'bench-press',
+        exerciseName: '벤치프레스',
+        bodyPart: 'chest',
+        sets: 4,
+        weight: 80,
+        reps: 8
+      },
+      {
+        id: 'user-1',
+        email: 'user@example.com',
+        provider: 'google'
+      }
+    );
+
+    expect(routinesService.updateRoutineExerciseByUserId).toHaveBeenCalledWith(
+      'routine-1',
+      'routine-exercise-1',
+      'user-1',
+      expect.objectContaining({
+        exerciseId: 'bench-press'
+      })
+    );
+  });
+
+  it('should append routine exercise by current user id', async () => {
+    const routinesService = {
+      getRoutineSummariesByUserId: jest.fn(),
+      createRoutineByUserId: jest.fn(),
+      appendRoutineExerciseByUserId: jest.fn().mockResolvedValue({
+        id: 'routine-exercise-2'
+      }),
+      updateRoutineExerciseByUserId: jest.fn(),
+      deleteRoutineByUserId: jest.fn(),
+      deleteRoutineExerciseByUserId: jest.fn()
+    } as unknown as RoutinesService;
+
+    const controller = new RoutinesController(routinesService);
+    const result = await controller.appendRoutineExercise(
+      'routine-1',
+      {
+        exerciseId: 'lat-pulldown',
+        exerciseName: '렛풀다운',
+        bodyPart: 'back',
+        sets: 4,
+        reps: 10,
+        weight: 50
+      },
+      {
+        id: 'user-1',
+        email: 'user@example.com',
+        provider: 'google'
+      }
+    );
+
+    expect(routinesService.appendRoutineExerciseByUserId).toHaveBeenCalledWith(
+      'routine-1',
+      'user-1',
+      expect.objectContaining({
+        exerciseId: 'lat-pulldown'
+      })
+    );
+    expect(result).toEqual({
+      id: 'routine-exercise-2'
+    });
   });
 });

@@ -10,18 +10,20 @@ import {
 } from '../routine-title/RoutineTitle';
 import { updateLocalPresetExercise } from '../preset-selection/presetStore';
 import {
+  appendPresetExercise,
   createPreset,
   fetchPresetById,
   updatePresetExercise
 } from '../preset-selection/presetApi';
 
 interface ExerciseDetailRouteState {
-  mode?: 'create' | 'edit';
+  mode?: 'create' | 'edit' | 'edit-add';
   presetId?: string;
   presetExercise?: {
     id: string;
     name: string;
     part: string;
+    exerciseCode?: string;
   };
 }
 
@@ -136,7 +138,9 @@ export function ExerciseDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = (location.state as ExerciseDetailRouteState | null) ?? null;
-  const isEditMode = routeState?.mode === 'edit' && Boolean(routeState.presetId);
+  const isEditUpdateMode = routeState?.mode === 'edit' && Boolean(routeState.presetId);
+  const isEditAddMode = routeState?.mode === 'edit-add' && Boolean(routeState.presetId);
+  const isEditMode = isEditUpdateMode || isEditAddMode;
 
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [setCount, setSetCount] = useState(FORM_CONFIG.sets.default);
@@ -164,23 +168,28 @@ export function ExerciseDetail() {
     const normalizedPresetName = routeState?.presetExercise?.name
       ? EXERCISE_NAME_ALIAS[routeState.presetExercise.name] ?? routeState.presetExercise.name
       : undefined;
+    const presetExerciseCode = routeState?.presetExercise?.exerciseCode;
     const foundExercise =
       exercises.find((ex) => ex.id === exerciseId) ||
+      exercises.find((ex) => ex.id === presetExerciseCode) ||
       exercises.find((ex) => ex.name === normalizedPresetName);
-    const fallbackExercise =
-      routeState?.presetExercise &&
-      routeState.presetExercise.id === exerciseId
-        ? {
-            id: routeState.presetExercise.id,
-            name: normalizedPresetName ?? routeState.presetExercise.name,
-            bodyPart: normalizedBodyPart
-          }
-        : null;
+    const fallbackExercise = routeState?.presetExercise
+      ? {
+          id: presetExerciseCode ?? exerciseId,
+          name: normalizedPresetName ?? routeState.presetExercise.name,
+          bodyPart: normalizedBodyPart
+        }
+      : null;
     setExercise(foundExercise ?? fallbackExercise ?? null);
-  }, [bodyPart, exerciseId, routeState?.presetExercise?.id, routeState?.presetExercise?.name]);
+  }, [
+    bodyPart,
+    exerciseId,
+    routeState?.presetExercise?.exerciseCode,
+    routeState?.presetExercise?.name
+  ]);
 
   useEffect(() => {
-    if (!isEditMode || !exercise || !routeState?.presetId) {
+    if (!isEditUpdateMode || !exercise || !routeState?.presetId) {
       return;
     }
 
@@ -231,7 +240,7 @@ export function ExerciseDetail() {
     };
   }, [
     exercise,
-    isEditMode,
+    isEditUpdateMode,
     routeState?.presetExercise?.id,
     routeState?.presetId
   ]);
@@ -454,7 +463,15 @@ export function ExerciseDetail() {
     }
 
     try {
-      await updatePresetExercise(routeState.presetId, detail);
+      if (isEditAddMode) {
+        await appendPresetExercise(routeState.presetId, detail);
+      } else {
+        const routineExerciseId = routeState.presetExercise?.id;
+        if (!routineExerciseId) {
+          return;
+        }
+        await updatePresetExercise(routeState.presetId, routineExerciseId, detail);
+      }
       navigate('/preset-selection');
     } catch (error) {
       console.error('루틴 편집 저장에 실패했습니다.', error);
@@ -485,6 +502,16 @@ export function ExerciseDetail() {
     }
 
     if (isEditMode) {
+      if (isEditAddMode) {
+        navigate('/create-routine', {
+          state: {
+            mode: 'edit-add',
+            presetId: routeState?.presetId
+          }
+        });
+        return;
+      }
+
       setIsActionPending(true);
       const saved = saveEditDraft(detail);
       if (!saved) {
@@ -536,7 +563,13 @@ export function ExerciseDetail() {
         onDurationInputChange={setDurationInput}
         onAddExercise={() => saveCurrentExercise('add')}
         onCompleteRoutine={() => saveCurrentExercise('complete')}
-        secondaryActionLabel={isEditMode ? '다른 운동 수정하기' : '운동 더 추가'}
+        secondaryActionLabel={
+          isEditAddMode
+            ? '다른 운동 추가하기'
+            : isEditMode
+              ? '다른 운동 수정하기'
+              : '운동 더 추가'
+        }
         isActionPending={isActionPending}
       />
       {isTitleDialogOpen && (

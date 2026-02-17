@@ -93,4 +93,19 @@ describe('CreateRoutine', () => {
     });
     expect(fetchBodyPartsSpy).not.toHaveBeenCalled();
   });
+
+  it('edit-add 모드에서는 부위를 선택하면 추가용 운동 선택 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderWithRouter({
+      pathname: '/create-routine',
+      state: { mode: 'edit-add', presetId: '2' }
+    });
+
+    const chestButton = await screen.findByText('가슴');
+    await user.click(chestButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/exercise-selection/chest', {
+      state: { mode: 'edit-add', presetId: '2' }
+    });
+  });
 });

@@ -11,6 +11,10 @@ import {
   RoutineExerciseSummaryDto,
   RoutineSummaryDto
 } from './dto/routine-summary.dto';
+import {
+  AppendRoutineExerciseResponseDto,
+  UpsertRoutineExerciseRequestDto
+} from './dto/upsert-routine-exercise.dto';
 import { RoutinesRepository } from './routines.repository';
 
 interface RoutineExerciseSetCreateInput {
@@ -53,19 +57,7 @@ export class RoutinesService {
   ): Promise<CreateRoutineResponseDto> {
     const title = this.toRoutineTitle(payload?.title);
     const preparedExercises = this.toCreateRoutineExercises(payload?.exercises);
-    const uniqueCodes = [...new Set(preparedExercises.map((exercise) => exercise.exerciseCode))];
-
-    const exerciseRows = await this.routinesRepository.findExercisesByCodes(uniqueCodes);
-    const exerciseIdByCode = new Map(
-      exerciseRows.map((exercise) => [exercise.code, exercise.id])
-    );
-
-    const unknownCodes = uniqueCodes.filter((code) => !exerciseIdByCode.has(code));
-    if (unknownCodes.length > 0) {
-      throw new BadRequestException(
-        `Unknown exerciseId values: ${unknownCodes.join(', ')}`
-      );
-    }
+    const exerciseIdByCode = await this.resolveExerciseIdsByCode(preparedExercises);
 
     const created = await this.routinesRepository.createByUserId(userId, {
       title,
@@ -88,6 +80,69 @@ export class RoutinesService {
       createdAt: this.toIsoString(created.createdAt),
       lastUsedAt: created.lastUsedAt ? this.toIsoString(created.lastUsedAt) : null
     };
+  }
+
+  async appendRoutineExerciseByUserId(
+    routineId: string,
+    userId: string,
+    payload: UpsertRoutineExerciseRequestDto
+  ): Promise<AppendRoutineExerciseResponseDto> {
+    const preparedExercise = this.toRoutineExerciseInput(payload, 'exercise');
+    const exerciseIdByCode = await this.resolveExerciseIdsByCode([preparedExercise]);
+
+    const created = await this.routinesRepository.appendExerciseByRoutineIdAndUserId(
+      routineId,
+      userId,
+      {
+        exerciseId: exerciseIdByCode.get(preparedExercise.exerciseCode) as string,
+        metricType: preparedExercise.metricType,
+        targetSets: preparedExercise.targetSets,
+        targetReps: preparedExercise.targetReps,
+        targetWeightKg: preparedExercise.targetWeightKg,
+        targetDurationSeconds: preparedExercise.targetDurationSeconds,
+        restSeconds: preparedExercise.restSeconds,
+        setDetails: preparedExercise.setDetails
+      }
+    );
+
+    if (!created) {
+      throw new NotFoundException('Routine not found.');
+    }
+
+    return {
+      id: created.id
+    };
+  }
+
+  async updateRoutineExerciseByUserId(
+    routineId: string,
+    routineExerciseId: string,
+    userId: string,
+    payload: UpsertRoutineExerciseRequestDto
+  ): Promise<void> {
+    const preparedExercise = this.toRoutineExerciseInput(payload, 'exercise');
+    const exerciseIdByCode = await this.resolveExerciseIdsByCode([preparedExercise]);
+
+    const updated =
+      await this.routinesRepository.updateExerciseByRoutineIdAndExerciseIdAndUserId(
+        routineId,
+        routineExerciseId,
+        userId,
+        {
+          exerciseId: exerciseIdByCode.get(preparedExercise.exerciseCode) as string,
+          metricType: preparedExercise.metricType,
+          targetSets: preparedExercise.targetSets,
+          targetReps: preparedExercise.targetReps,
+          targetWeightKg: preparedExercise.targetWeightKg,
+          targetDurationSeconds: preparedExercise.targetDurationSeconds,
+          restSeconds: preparedExercise.restSeconds,
+          setDetails: preparedExercise.setDetails
+        }
+      );
+
+    if (!updated) {
+      throw new NotFoundException('Routine exercise not found.');
+    }
   }
 
   async deleteRoutineByUserId(routineId: string, userId: string): Promise<void> {
@@ -129,34 +184,55 @@ export class RoutinesService {
     }
   }
 
+  private async resolveExerciseIdsByCode(
+    exercises: RoutineExerciseCreateInput[]
+  ): Promise<Map<string, string>> {
+    const uniqueCodes = [...new Set(exercises.map((exercise) => exercise.exerciseCode))];
+    const exerciseRows = await this.routinesRepository.findExercisesByCodes(uniqueCodes);
+    const exerciseIdByCode = new Map(
+      exerciseRows.map((exercise) => [exercise.code, exercise.id])
+    );
+
+    const unknownCodes = uniqueCodes.filter((code) => !exerciseIdByCode.has(code));
+    if (unknownCodes.length > 0) {
+      throw new BadRequestException(
+        `Unknown exerciseId values: ${unknownCodes.join(', ')}`
+      );
+    }
+
+    return exerciseIdByCode;
+  }
+
   private toCreateRoutineExercises(value: unknown): RoutineExerciseCreateInput[] {
     if (!Array.isArray(value) || value.length === 0) {
       throw new BadRequestException('exercises must include at least one item.');
     }
 
-    return value.map((exercise, index) => this.toCreateRoutineExercise(exercise, index));
+    return value.map((exercise, index) =>
+      this.toRoutineExerciseInput(exercise, `exercises[${index}]`)
+    );
   }
 
-  private toCreateRoutineExercise(
+  private toRoutineExerciseInput(
     value: unknown,
-    index: number
+    pathPrefix: string
   ): RoutineExerciseCreateInput {
     if (!this.isRecord(value)) {
-      throw new BadRequestException(`exercises[${index}] must be an object.`);
+      throw new BadRequestException(`${pathPrefix} must be an object.`);
     }
 
     const exerciseCode = this.toString(value.exerciseId);
     if (!exerciseCode) {
-      throw new BadRequestException(`exercises[${index}].exerciseId is required.`);
+      throw new BadRequestException(`${pathPrefix}.exerciseId is required.`);
     }
 
     const restSeconds = this.readOptionalNonNegativeInt(
       value.restTime,
-      `exercises[${index}].restTime`
+      `${pathPrefix}.restTime`
     );
     const durationMinutes = this.readOptionalPositiveInt(
       value.duration,
-      `exercises[${index}].duration`
+      `${pathPrefix}.duration`
     );
 
     if (durationMinutes !== undefined) {
@@ -171,22 +247,22 @@ export class RoutinesService {
 
     const setCount = this.readRequiredPositiveInt(
       value.sets,
-      `exercises[${index}].sets`
+      `${pathPrefix}.sets`
     );
     const targetWeightKg = this.readOptionalNonNegativeNumber(
       value.weight,
-      `exercises[${index}].weight`
+      `${pathPrefix}.weight`
     );
     const targetReps = this.readOptionalPositiveInt(
       value.reps,
-      `exercises[${index}].reps`
+      `${pathPrefix}.reps`
     );
     const setDetails = this.toStrengthSetDetails({
       rawValue: value.setDetails,
       setCount,
       fallbackWeight: targetWeightKg,
       fallbackReps: targetReps,
-      exerciseIndex: index
+      pathPrefix
     });
 
     return {
@@ -205,18 +281,18 @@ export class RoutinesService {
     setCount,
     fallbackWeight,
     fallbackReps,
-    exerciseIndex
+    pathPrefix
   }: {
     rawValue: unknown;
     setCount: number;
     fallbackWeight?: number;
     fallbackReps?: number;
-    exerciseIndex: number;
+    pathPrefix: string;
   }): RoutineExerciseSetCreateInput[] {
     if (!Array.isArray(rawValue)) {
       if (fallbackReps === undefined) {
         throw new BadRequestException(
-          `exercises[${exerciseIndex}].reps is required for strength exercises.`
+          `${pathPrefix}.reps is required for strength exercises.`
         );
       }
 
@@ -232,13 +308,13 @@ export class RoutinesService {
     rawValue.forEach((setValue, setIndex) => {
       if (!this.isRecord(setValue)) {
         throw new BadRequestException(
-          `exercises[${exerciseIndex}].setDetails[${setIndex}] must be an object.`
+          `${pathPrefix}.setDetails[${setIndex}] must be an object.`
         );
       }
 
       const setNo = this.readRequiredPositiveInt(
         setValue.setNumber,
-        `exercises[${exerciseIndex}].setDetails[${setIndex}].setNumber`
+        `${pathPrefix}.setDetails[${setIndex}].setNumber`
       );
 
       if (setNo > setCount) {
@@ -248,11 +324,11 @@ export class RoutinesService {
       mapBySetNo.set(setNo, {
         weight: this.readOptionalNonNegativeNumber(
           setValue.weight,
-          `exercises[${exerciseIndex}].setDetails[${setIndex}].weight`
+          `${pathPrefix}.setDetails[${setIndex}].weight`
         ),
         reps: this.readOptionalPositiveInt(
           setValue.reps,
-          `exercises[${exerciseIndex}].setDetails[${setIndex}].reps`
+          `${pathPrefix}.setDetails[${setIndex}].reps`
         )
       });
     });
@@ -263,7 +339,7 @@ export class RoutinesService {
       const targetReps = setData?.reps ?? fallbackReps;
       if (targetReps === undefined) {
         throw new BadRequestException(
-          `exercises[${exerciseIndex}].setDetails requires reps for set ${setNo}.`
+          `${pathPrefix}.setDetails requires reps for set ${setNo}.`
         );
       }
 
@@ -368,6 +444,7 @@ export class RoutinesService {
     const id = this.toString(value.id);
     const part = this.toString(value.part);
     const name = this.toString(value.name);
+    const exerciseCode = this.toString(value.exerciseCode);
 
     if (!id || !part || !name) {
       return null;
@@ -379,6 +456,7 @@ export class RoutinesService {
       id,
       part,
       name,
+      exerciseCode: exerciseCode ?? undefined,
       sets,
       weight: this.toNumber(value.weight),
       reps: this.toInt(value.reps),

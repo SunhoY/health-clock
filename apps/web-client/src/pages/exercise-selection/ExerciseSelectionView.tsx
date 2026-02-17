@@ -1,9 +1,14 @@
 import { useRef, useState } from 'react';
 import { Exercise } from '../../types/exercise';
 
+export type ExerciseSelectionItem = Exercise & {
+  routineExerciseId?: string;
+  exerciseCode?: string;
+};
+
 interface ExerciseSelectionViewProps {
   selectedBodyPart: string;
-  exercises: Exercise[];
+  exercises: ExerciseSelectionItem[];
   title?: string;
   emptyMessage?: string;
   isLoading?: boolean;
@@ -11,10 +16,11 @@ interface ExerciseSelectionViewProps {
   actionError?: string | null;
   isDeletePending?: boolean;
   onRetry?: () => void;
-  onExerciseSelect: (exercise: Exercise) => void;
+  onExerciseSelect: (exercise: ExerciseSelectionItem) => void;
   isEditMode?: boolean;
-  onEditExercise?: (exercise: Exercise) => void;
-  onDeleteExercise?: (exercise: Exercise) => void;
+  onEditExercise?: (exercise: ExerciseSelectionItem) => void;
+  onDeleteExercise?: (exercise: ExerciseSelectionItem) => void;
+  onAddExercise?: () => void;
   onBack?: () => void;
 }
 
@@ -32,6 +38,7 @@ export function ExerciseSelectionView({
   isEditMode = false,
   onEditExercise,
   onDeleteExercise,
+  onAddExercise,
   onBack
 }: ExerciseSelectionViewProps) {
   const LONG_PRESS_MS = 700;
@@ -164,6 +171,16 @@ export function ExerciseSelectionView({
             </div>
           )}
         </div>
+
+        {isEditMode && onAddExercise && (
+          <button
+            type="button"
+            onClick={onAddExercise}
+            className="mt-5 w-full rounded-2xl border border-cyan-300/50 bg-cyan-500/10 px-4 py-4 text-lg font-bold text-cyan-100 transition hover:bg-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            새 운동 추가하기
+          </button>
+        )}
       </div>
 
       {isEditMode && openMenuExerciseId && (
