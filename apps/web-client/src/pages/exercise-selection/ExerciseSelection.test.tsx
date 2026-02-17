@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseSelection } from './ExerciseSelection';
 import { resetLocalPresets } from '../preset-selection/presetStore';
+import * as presetApi from '../preset-selection/presetApi';
 
 // Mock console.log
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
@@ -90,5 +92,35 @@ describe('ExerciseSelection', () => {
     expect(screen.getByText('수정할 운동 선택')).toBeInTheDocument();
     expect(await screen.findByText('벤치프레스')).toBeInTheDocument();
     expect(screen.getByText('바벨 로우')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '벤치프레스 관리 메뉴' })).toBeInTheDocument();
+  });
+
+  it('편집 모드에서 운동 삭제를 선택하면 목록에서 제거된다', async () => {
+    const user = userEvent.setup();
+    const deleteSpy = jest.spyOn(presetApi, 'deletePresetExercise');
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/exercise-selection/edit',
+            state: { mode: 'edit', presetId: '2' }
+          }
+        ]}
+      >
+        <Routes>
+          <Route path="/exercise-selection/:bodyPart" element={<ExerciseSelection />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await user.click(await screen.findByRole('button', { name: '벤치프레스 관리 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(deleteSpy).toHaveBeenCalledWith('2', 'bench-press');
+    expect(screen.queryByText('벤치프레스')).not.toBeInTheDocument();
+    expect(screen.getByText('바벨 로우')).toBeInTheDocument();
+
+    deleteSpy.mockRestore();
   });
 });

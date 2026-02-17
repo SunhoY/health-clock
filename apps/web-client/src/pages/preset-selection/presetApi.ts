@@ -1,5 +1,6 @@
 import { ExerciseDetail } from '../../types/exercise';
 import {
+  deleteLocalPresetExercise,
   deleteLocalPreset,
   getLocalPresetById,
   getLocalPresets,
@@ -24,4 +25,11 @@ export const updatePresetExercise = async (
   exercise: ExerciseDetail
 ): Promise<PresetItem | undefined> => {
   return updateLocalPresetExercise(presetId, exercise);
+};
+
+export const deletePresetExercise = async (
+  presetId: string,
+  exerciseId: string
+): Promise<PresetItem | undefined> => {
+  return deleteLocalPresetExercise(presetId, exerciseId);
 };

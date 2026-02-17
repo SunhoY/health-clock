@@ -201,6 +201,29 @@ export const updateLocalPresetExercise = (
   return localPresets.find((preset) => preset.id === presetId);
 };
 
+export const deleteLocalPresetExercise = (
+  presetId: string,
+  exerciseId: string
+): PresetItem | undefined => {
+  const targetPreset = localPresets.find((preset) => preset.id === presetId);
+  if (!targetPreset) {
+    return undefined;
+  }
+
+  localPresets = localPresets.map((preset) => {
+    if (preset.id !== presetId) {
+      return preset;
+    }
+
+    return {
+      ...preset,
+      exercises: preset.exercises.filter((exercise) => exercise.id !== exerciseId)
+    };
+  });
+
+  return localPresets.find((preset) => preset.id === presetId);
+};
+
 export const resetLocalPresets = () => {
   localPresets = [...INITIAL_PRESETS];
 };

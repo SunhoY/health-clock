@@ -2,7 +2,7 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { ExerciseSelectionView } from './ExerciseSelectionView';
 import { EXERCISES_DATA } from '../../types/exercise';
 import { Exercise } from '../../types/exercise';
-import { fetchPresetById } from '../preset-selection/presetApi';
+import { deletePresetExercise, fetchPresetById } from '../preset-selection/presetApi';
 import { useEffect, useMemo, useState } from 'react';
 import { PresetExercise } from '../preset-selection/presetStore';
 
@@ -118,6 +118,16 @@ export function ExerciseSelection() {
     });
   };
 
+  const handleDeleteExercise = async (exercise: Exercise) => {
+    if (!routeState?.presetId) {
+      return;
+    }
+
+    await deletePresetExercise(routeState.presetId, exercise.id);
+    const nextPreset = await fetchPresetById(routeState.presetId);
+    setEditExercises((nextPreset?.exercises ?? []).map(findExerciseByPreset));
+  };
+
   return (
     <ExerciseSelectionView
       selectedBodyPart={selectedBodyPart}
@@ -125,6 +135,10 @@ export function ExerciseSelection() {
       title={isEditMode ? '수정할 운동 선택' : undefined}
       emptyMessage={isEditMode ? '수정할 운동이 없습니다.' : undefined}
       onExerciseSelect={handleExerciseSelect}
+      isEditMode={isEditMode}
+      onEditExercise={handleExerciseSelect}
+      onDeleteExercise={isEditMode ? handleDeleteExercise : undefined}
+      onBack={isEditMode ? () => navigate(-1) : undefined}
     />
   );
 } 
