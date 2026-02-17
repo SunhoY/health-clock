@@ -1,5 +1,45 @@
 {
   "name": "@health-clock/web-client",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "nx": {
+    "targets": {
+      "dev": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/web-client",
+          "command": "vite"
+        }
+      },
+      "build": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/web-client",
+          "command": "vite build"
+        }
+      },
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "pnpm jest -c apps/web-client/jest.config.ts"
+        }
+      },
+      "storybook": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/web-client",
+          "command": "storybook dev -p 4400 --config-dir .storybook --no-open"
+        }
+      },
+      "build-storybook": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/web-client",
+          "command": "storybook build --config-dir .storybook -o dist/storybook"
+        }
+      }
+    }
+  }
 }

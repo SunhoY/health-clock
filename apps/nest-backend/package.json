@@ -40,6 +40,17 @@
           }
         }
       },
+      "dev": {
+        "continuous": true,
+        "executor": "@nx/js:node",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "buildTarget": "@health-clock/nest-backend:build:development",
+          "runBuildTargetDependencies": false
+        }
+      },
       "test": {
         "options": {
           "passWithNoTests": true
