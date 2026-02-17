@@ -38,8 +38,11 @@ describe('GoogleAuthCallback', () => {
       json: async () => ({
         accessToken: 'access-token',
         expiresIn: 3600,
-        scope: 'openid email profile',
         tokenType: 'Bearer',
+        user: {
+          id: 'user-1',
+          email: 'user@example.com',
+        },
       }),
     });
 

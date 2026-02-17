@@ -1,8 +1,9 @@
 export interface GoogleAuthExchangeResponseDto {
   accessToken: string;
+  tokenType: 'Bearer';
   expiresIn: number;
-  refreshToken?: string;
-  scope: string;
-  tokenType: string;
-  idToken?: string;
+  user: {
+    id: string;
+    email: string;
+  };
 }

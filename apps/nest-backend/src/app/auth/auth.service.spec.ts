@@ -1,14 +1,39 @@
 import axios from 'axios';
 import { BadGatewayException, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
+import { JwtTokenService } from './jwt-token.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let authRepository: {
+    findOrCreateGoogleUser: jest.Mock;
+  };
+  let jwtTokenService: {
+    issueAccessToken: jest.Mock;
+  };
 
   beforeAll(async () => {
+    authRepository = {
+      findOrCreateGoogleUser: jest.fn()
+    };
+    jwtTokenService = {
+      issueAccessToken: jest.fn()
+    };
+
     const app = await Test.createTestingModule({
-      providers: [AuthService]
+      providers: [
+        AuthService,
+        {
+          provide: AuthRepository,
+          useValue: authRepository
+        },
+        {
+          provide: JwtTokenService,
+          useValue: jwtTokenService
+        }
+      ]
     }).compile();
 
     service = app.get<AuthService>(AuthService);
@@ -16,6 +41,8 @@ describe('AuthService', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    authRepository.findOrCreateGoogleUser.mockReset();
+    jwtTokenService.issueAccessToken.mockReset();
     delete process.env.GOOGLE_OAUTH_CLIENT_ID;
     delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
     delete process.env.GOOGLE_OAUTH_REDIRECT_URI;
@@ -74,20 +101,36 @@ describe('AuthService', () => {
   });
 
   describe('exchangeGoogleAuthCode', () => {
-    it('should exchange auth code to google tokens when state is valid', async () => {
+    it('should exchange auth code and issue app token when state is valid', async () => {
       const createdUrl = new URL(
         service.createGoogleAuthStartUrl('http://localhost:4200')
       );
       const state = createdUrl.searchParams.get('state');
       const axiosPostSpy = jest.spyOn(axios, 'post').mockResolvedValue({
         data: {
-          access_token: 'access-token',
+          access_token: 'google-access-token',
           expires_in: 3600,
           refresh_token: 'refresh-token',
           scope: 'openid email profile',
           token_type: 'Bearer',
           id_token: 'id-token'
         }
+      });
+      const axiosGetSpy = jest.spyOn(axios, 'get').mockResolvedValue({
+        data: {
+          sub: 'google-sub-123',
+          email: 'user@example.com',
+          name: 'Tester',
+          picture: 'https://example.com/profile.png'
+        }
+      });
+      authRepository.findOrCreateGoogleUser.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@example.com'
+      });
+      jwtTokenService.issueAccessToken.mockReturnValue({
+        accessToken: 'app-token',
+        expiresIn: 3600
       });
 
       const result = await service.exchangeGoogleAuthCode('code-123', state!);
@@ -104,13 +147,33 @@ describe('AuthService', () => {
       expect(config?.headers?.['Content-Type']).toBe(
         'application/x-www-form-urlencoded'
       );
+      expect(axiosGetSpy).toHaveBeenCalledWith(
+        'https://openidconnect.googleapis.com/v1/userinfo',
+        {
+          headers: {
+            Authorization: 'Bearer google-access-token'
+          }
+        }
+      );
+      expect(authRepository.findOrCreateGoogleUser).toHaveBeenCalledWith({
+        providerUserId: 'google-sub-123',
+        email: 'user@example.com',
+        displayName: 'Tester',
+        profileImageUrl: 'https://example.com/profile.png'
+      });
+      expect(jwtTokenService.issueAccessToken).toHaveBeenCalledWith({
+        id: 'user-1',
+        email: 'user@example.com',
+        provider: 'google'
+      });
       expect(result).toEqual({
-        accessToken: 'access-token',
+        accessToken: 'app-token',
         expiresIn: 3600,
-        refreshToken: 'refresh-token',
-        scope: 'openid email profile',
         tokenType: 'Bearer',
-        idToken: 'id-token'
+        user: {
+          id: 'user-1',
+          email: 'user@example.com'
+        }
       });
     });
 
@@ -126,11 +189,25 @@ describe('AuthService', () => {
       ).searchParams.get('state')!;
       jest.spyOn(axios, 'post').mockResolvedValue({
         data: {
-          access_token: 'access-token',
+          access_token: 'google-access-token',
           expires_in: 3600,
           scope: 'openid email profile',
           token_type: 'Bearer'
         }
+      });
+      jest.spyOn(axios, 'get').mockResolvedValue({
+        data: {
+          sub: 'google-sub-123',
+          email: 'user@example.com'
+        }
+      });
+      authRepository.findOrCreateGoogleUser.mockResolvedValue({
+        id: 'user-1',
+        email: 'user@example.com'
+      });
+      jwtTokenService.issueAccessToken.mockReturnValue({
+        accessToken: 'app-token',
+        expiresIn: 3600
       });
 
       await service.exchangeGoogleAuthCode('code-123', state);

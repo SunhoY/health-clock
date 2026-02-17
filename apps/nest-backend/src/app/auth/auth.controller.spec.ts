@@ -5,11 +5,37 @@ import { GoogleAuthExchangeResponseDto } from './dto/google-auth-exchange-respon
 
 describe('AuthController', () => {
   let app: TestingModule;
+  let authService: {
+    getAuthProviders: jest.Mock;
+    createGoogleAuthStartUrl: jest.Mock;
+    exchangeGoogleAuthCode: jest.Mock;
+  };
 
   beforeAll(async () => {
+    authService = {
+      getAuthProviders: jest.fn().mockReturnValue([
+        {
+          id: 'google',
+          label: 'Google',
+          startUrl: '/api/auth/google/start'
+        }
+      ]),
+      createGoogleAuthStartUrl: jest
+        .fn()
+        .mockReturnValue(
+          'https://accounts.google.com/o/oauth2/v2/auth?state=state123&redirect_uri=http%3A%2F%2Flocalhost%3A4200%2Fauth%2Fgoogle%2FloggedIn'
+        ),
+      exchangeGoogleAuthCode: jest.fn()
+    };
+
     app = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [AuthService]
+      providers: [
+        {
+          provide: AuthService,
+          useValue: authService
+        }
+      ]
     }).compile();
   });
 
@@ -23,6 +49,7 @@ describe('AuthController', () => {
           startUrl: '/api/auth/google/start'
         }
       ]);
+      expect(authService.getAuthProviders).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -40,6 +67,9 @@ describe('AuthController', () => {
         { redirect } as never
       );
 
+      expect(authService.createGoogleAuthStartUrl).toHaveBeenCalledWith(
+        'http://localhost:4200'
+      );
       expect(redirect).toHaveBeenCalledTimes(1);
       const [statusCode, location] = redirect.mock.calls[0];
       expect(statusCode).toBe(302);
@@ -48,31 +78,33 @@ describe('AuthController', () => {
       expect(new URL(location).searchParams.get('redirect_uri')).toBe(
         'http://localhost:4200/auth/google/loggedIn'
       );
-      expect(new URL(location).searchParams.get('state')).toBeTruthy();
+      expect(new URL(location).searchParams.get('state')).toBe('state123');
     });
   });
 
   describe('exchangeGoogleAuthCode', () => {
     it('should call service exchange with code and state', async () => {
       const controller = app.get<AuthController>(AuthController);
-      const service = app.get<AuthService>(AuthService);
       const expectedResponse: GoogleAuthExchangeResponseDto = {
-        accessToken: 'access-token',
+        accessToken: 'app-token',
         expiresIn: 3600,
-        scope: 'openid email profile',
         tokenType: 'Bearer',
-        idToken: 'id-token'
+        user: {
+          id: 'user-1',
+          email: 'user@example.com'
+        }
       };
-      const exchangeSpy = jest
-        .spyOn(service, 'exchangeGoogleAuthCode')
-        .mockResolvedValue(expectedResponse);
+      authService.exchangeGoogleAuthCode.mockResolvedValue(expectedResponse);
 
       const result = await controller.exchangeGoogleAuthCode({
         code: 'auth-code',
         state: 'oauth-state'
       });
 
-      expect(exchangeSpy).toHaveBeenCalledWith('auth-code', 'oauth-state');
+      expect(authService.exchangeGoogleAuthCode).toHaveBeenCalledWith(
+        'auth-code',
+        'oauth-state'
+      );
       expect(result).toEqual(expectedResponse);
     });
   });

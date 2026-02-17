@@ -7,10 +7,11 @@ type CallbackStatus = 'loading' | 'error';
 interface GoogleExchangeResponse {
   accessToken: string;
   expiresIn: number;
-  refreshToken?: string;
-  scope: string;
-  tokenType: string;
-  idToken?: string;
+  tokenType: 'Bearer';
+  user: {
+    id: string;
+    email: string;
+  };
 }
 
 const AUTH_STORAGE_KEY = 'health-clock.google-auth';

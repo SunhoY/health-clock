@@ -8,16 +8,40 @@ import {
 import { randomBytes } from 'crypto';
 import { AuthProviderDto } from './dto/auth-provider.dto';
 import { GoogleAuthExchangeResponseDto } from './dto/google-auth-exchange-response.dto';
+import { AuthRepository } from './auth.repository';
+import { JwtTokenService } from './jwt-token.service';
 
 interface OAuthStateContext {
   expiresAt: number;
   redirectUri: string;
 }
 
+interface GoogleTokenResponse {
+  access_token: string;
+  expires_in: number;
+  refresh_token?: string;
+  scope: string;
+  token_type: string;
+  id_token?: string;
+}
+
+interface GoogleUserInfoResponse {
+  sub: string;
+  email: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly oauthStateTtlMs = 5 * 60 * 1000;
   private readonly oauthStateStore = new Map<string, OAuthStateContext>();
+
+  constructor(
+    private readonly authRepository: AuthRepository,
+    private readonly jwtTokenService: JwtTokenService
+  ) {}
 
   getAuthProviders(): AuthProviderDto[] {
     return [
@@ -61,6 +85,37 @@ export class AuthService {
     this.cleanupExpiredStates();
     const redirectUri = this.consumeState(state);
 
+    const tokenResponse = await this.exchangeAuthCodeWithGoogle(code, redirectUri);
+    const userInfo = await this.fetchGoogleUserInfo(tokenResponse.access_token);
+
+    const appUser = await this.authRepository.findOrCreateGoogleUser({
+      providerUserId: userInfo.sub,
+      email: userInfo.email,
+      displayName: userInfo.name,
+      profileImageUrl: userInfo.picture
+    });
+
+    const issuedToken = this.jwtTokenService.issueAccessToken({
+      id: appUser.id,
+      email: appUser.email,
+      provider: 'google'
+    });
+
+    return {
+      accessToken: issuedToken.accessToken,
+      tokenType: 'Bearer',
+      expiresIn: issuedToken.expiresIn,
+      user: {
+        id: appUser.id,
+        email: appUser.email
+      }
+    };
+  }
+
+  private async exchangeAuthCodeWithGoogle(
+    code: string,
+    redirectUri: string
+  ): Promise<GoogleTokenResponse> {
     try {
       const response = await axios.post(
         'https://oauth2.googleapis.com/token',
@@ -79,50 +134,69 @@ export class AuthService {
         }
       );
 
-      const data = response.data as {
-        access_token: string;
-        expires_in: number;
-        refresh_token?: string;
-        scope: string;
-        token_type: string;
-        id_token?: string;
-      };
-
-      return {
-        accessToken: data.access_token,
-        expiresIn: data.expires_in,
-        refreshToken: data.refresh_token,
-        scope: data.scope,
-        tokenType: data.token_type,
-        idToken: data.id_token
-      };
+      return response.data as GoogleTokenResponse;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const providerError =
-          typeof error.response?.data === 'object' && error.response?.data
-            ? String(
+      throw this.toGoogleGatewayError(error);
+    }
+  }
+
+  private async fetchGoogleUserInfo(
+    accessToken: string
+  ): Promise<GoogleUserInfoResponse> {
+    try {
+      const response = await axios.get(
+        'https://openidconnect.googleapis.com/v1/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      const data = response.data as GoogleUserInfoResponse;
+      if (!data?.sub || !data?.email) {
+        throw new BadGatewayException(
+          'Failed to resolve user profile from Google (missing subject/email).'
+        );
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+
+      throw this.toGoogleGatewayError(error);
+    }
+  }
+
+  private toGoogleGatewayError(error: unknown): BadGatewayException {
+    if (axios.isAxiosError(error)) {
+      const providerError =
+        typeof error.response?.data === 'object' && error.response?.data
+          ? String(
+              (
+                error.response.data as {
+                  error?: string;
+                  error_description?: string;
+                }
+              ).error_description ??
                 (
                   error.response.data as {
                     error?: string;
                     error_description?: string;
                   }
-                ).error_description ??
-                  (
-                    error.response.data as {
-                      error?: string;
-                      error_description?: string;
-                    }
-                  ).error ??
-                  'unknown_error'
-              )
-            : 'unknown_error';
-        throw new BadGatewayException(
-          `Failed to exchange authorization code with Google (${providerError}).`
-        );
-      }
+                ).error ??
+                'unknown_error'
+            )
+          : 'unknown_error';
 
-      throw error;
+      return new BadGatewayException(
+        `Google OAuth request failed (${providerError}).`
+      );
     }
+
+    return new BadGatewayException('Google OAuth request failed (unknown_error).');
   }
 
   private cleanupExpiredStates(): void {
