@@ -14,6 +14,7 @@
 
 - `email`은 로그인/사용자 식별용 비즈니스 키로 사용한다. (`users.email` 유니크)
 - 내부 참조 안정성을 위해 PK는 `UUID`를 사용한다. (이메일 변경 시 FK 연쇄 수정 방지)
+- 본 설계는 기본 스키마 `public` 사용을 전제로 한다.
 - OAuth 계정 정보(`provider`, `provider_user_id`)와 사용자 프로필은 분리 저장한다.
 - 루틴-운동은 N:M 관계를 `routine_exercises`로 해소하고, 정렬 순서 및 목표값을 함께 저장한다.
 - 세트 단위 상세값이 필요할 때를 위해 `routine_exercise_sets`를 둔다.
