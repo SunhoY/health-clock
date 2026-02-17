@@ -3,9 +3,17 @@ import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { ExerciseDetailView } from './ExerciseDetailView';
 import { EXERCISES_DATA, FORM_CONFIG, Exercise, ExerciseDetail as ExerciseDetailModel, RoutineTitleForm } from '../../types/exercise';
 import { RoutineTitleView } from '../routine-title/RoutineTitleView';
-import { appendTempRoutineData, getTempRoutineData } from '../routine-title/RoutineTitle';
-import { addLocalPreset, updateLocalPresetExercise } from '../preset-selection/presetStore';
-import { fetchPresetById, updatePresetExercise } from '../preset-selection/presetApi';
+import {
+  appendTempRoutineData,
+  getTempRoutineData,
+  setTempRoutineData
+} from '../routine-title/RoutineTitle';
+import { updateLocalPresetExercise } from '../preset-selection/presetStore';
+import {
+  createPreset,
+  fetchPresetById,
+  updatePresetExercise
+} from '../preset-selection/presetApi';
 
 interface ExerciseDetailRouteState {
   mode?: 'create' | 'edit';
@@ -136,6 +144,8 @@ export function ExerciseDetail() {
   const [durationInput, setDurationInput] = useState(String(FORM_CONFIG.duration.default));
   const [isTitleDialogOpen, setIsTitleDialogOpen] = useState(false);
   const [pendingCompleteExercise, setPendingCompleteExercise] = useState<ExerciseDetailModel | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [titleForm, setTitleForm] = useState<RoutineTitleForm>({
     title: '',
     isValid: false,
@@ -374,32 +384,48 @@ export function ExerciseDetail() {
 
     setPendingCompleteExercise(detail);
     setTitleForm(validateTitle(''));
+    setSaveError(null);
     setIsTitleDialogOpen(true);
   };
 
   const handleTitleChange = (title: string) => {
     setTitleForm(validateTitle(title));
+    if (saveError) {
+      setSaveError(null);
+    }
   };
 
   const handleDialogCancel = () => {
     setIsTitleDialogOpen(false);
     setPendingCompleteExercise(null);
+    setSaveError(null);
+    setIsSavingTitle(false);
   };
 
-  const handleDialogSave = () => {
-    if (!pendingCompleteExercise || !titleForm.isValid) {
+  const handleDialogSave = async () => {
+    if (!pendingCompleteExercise || !titleForm.isValid || isSavingTitle) {
       return;
     }
 
-    appendTempRoutineData(pendingCompleteExercise);
     const title = titleForm.title.trim();
-    const exercises = getTempRoutineData();
-    const savedPreset = addLocalPreset(title, exercises);
+    const exercises = [...getTempRoutineData(), pendingCompleteExercise];
 
-    console.log('루틴 저장:', savedPreset);
-    setIsTitleDialogOpen(false);
-    setPendingCompleteExercise(null);
-    navigate('/preset-selection');
+    setIsSavingTitle(true);
+    setSaveError(null);
+
+    try {
+      await createPreset(title, exercises);
+      setTempRoutineData(exercises);
+      setIsTitleDialogOpen(false);
+      setPendingCompleteExercise(null);
+      navigate('/preset-selection');
+    } catch (error) {
+      console.error('루틴 저장에 실패했습니다.', error);
+      setSaveError('루틴 저장에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsSavingTitle(false);
+    }
+
   };
 
   const saveEditDraft = (detail: ExerciseDetailModel): boolean => {
@@ -494,11 +520,17 @@ export function ExerciseDetail() {
       />
       {isTitleDialogOpen && (
         <RoutineTitleView
-          form={titleForm}
+          form={{
+            ...titleForm,
+            error: saveError ?? titleForm.error
+          }}
           titlePlaceholder="저장할 루틴의 제목을 입력해주세요"
           onTitleChange={handleTitleChange}
-          onSave={handleDialogSave}
+          onSave={() => {
+            void handleDialogSave();
+          }}
           onCancel={handleDialogCancel}
+          isSaving={isSavingTitle}
         />
       )}
     </>

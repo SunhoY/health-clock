@@ -1,10 +1,109 @@
+import { BadRequestException } from '@nestjs/common';
 import { RoutinesRepository } from './routines.repository';
 import { RoutinesService } from './routines.service';
 
 describe('RoutinesService', () => {
+  it('should create routine for authenticated user', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn().mockResolvedValue([
+        { id: 'exercise-1', code: 'bench-press' }
+      ]),
+      createByUserId: jest.fn().mockResolvedValue({
+        id: 'routine-1',
+        title: '상체 루틴',
+        exerciseCount: 1,
+        createdAt: new Date('2026-02-17T10:00:00.000Z'),
+        lastUsedAt: null
+      }),
+      deleteByRoutineIdAndUserId: jest.fn()
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+    const result = await service.createRoutineByUserId('user-1', {
+      title: '상체 루틴',
+      exercises: [
+        {
+          exerciseId: 'bench-press',
+          exerciseName: '벤치프레스',
+          bodyPart: 'chest',
+          sets: 4,
+          reps: 8,
+          weight: 80,
+          setDetails: [
+            { setNumber: 1, reps: 8, weight: 80 },
+            { setNumber: 2, reps: 8, weight: 80 },
+            { setNumber: 3, reps: 8, weight: 80 },
+            { setNumber: 4, reps: 8, weight: 80 }
+          ]
+        }
+      ]
+    });
+
+    expect(routinesRepository.findExercisesByCodes).toHaveBeenCalledWith([
+      'bench-press'
+    ]);
+    expect(routinesRepository.createByUserId).toHaveBeenCalledWith('user-1', {
+      title: '상체 루틴',
+      exercises: [
+        {
+          exerciseId: 'exercise-1',
+          metricType: 'set_based',
+          targetSets: 4,
+          targetReps: 8,
+          targetWeightKg: 80,
+          restSeconds: 60,
+          targetDurationSeconds: undefined,
+          setDetails: [
+            { setNo: 1, targetReps: 8, targetWeightKg: 80 },
+            { setNo: 2, targetReps: 8, targetWeightKg: 80 },
+            { setNo: 3, targetReps: 8, targetWeightKg: 80 },
+            { setNo: 4, targetReps: 8, targetWeightKg: 80 }
+          ]
+        }
+      ]
+    });
+    expect(result).toEqual({
+      id: 'routine-1',
+      title: '상체 루틴',
+      exerciseCount: 1,
+      createdAt: '2026-02-17T10:00:00.000Z',
+      lastUsedAt: null
+    });
+  });
+
+  it('should reject routine creation when exercise code is unknown', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn().mockResolvedValue([]),
+      createByUserId: jest.fn(),
+      deleteByRoutineIdAndUserId: jest.fn()
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+
+    await expect(
+      service.createRoutineByUserId('user-1', {
+        title: '상체 루틴',
+        exercises: [
+          {
+            exerciseId: 'unknown-code',
+            exerciseName: '없는 운동',
+            bodyPart: 'chest',
+            sets: 3,
+            reps: 10
+          }
+        ]
+      })
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(routinesRepository.createByUserId).not.toHaveBeenCalled();
+  });
+
   it('should delete the routine for the authenticated user', async () => {
     const routinesRepository = {
       findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn(),
+      createByUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn().mockResolvedValue(true)
     } as unknown as RoutinesRepository;
 
@@ -39,6 +138,8 @@ describe('RoutinesService', () => {
           lastUsedAt: new Date('2026-02-16T18:10:00.000Z')
         }
       ]),
+      findExercisesByCodes: jest.fn(),
+      createByUserId: jest.fn(),
       deleteByRoutineIdAndUserId: jest.fn()
     } as unknown as RoutinesRepository;
 

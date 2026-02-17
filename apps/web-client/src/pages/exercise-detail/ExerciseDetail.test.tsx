@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseDetail } from './ExerciseDetail';
 import { getTempRoutineData, setTempRoutineData } from '../routine-title/RoutineTitle';
-import { getLocalPresets, resetLocalPresets } from '../preset-selection/presetStore';
+import { resetLocalPresets } from '../preset-selection/presetStore';
 import * as presetApi from '../preset-selection/presetApi';
 
 const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
@@ -11,6 +11,7 @@ const mockConsoleLog = jest.spyOn(console, 'log').mockImplementation(() => {
 });
 
 const mockNavigate = jest.fn();
+const createPresetSpy = jest.spyOn(presetApi, 'createPreset');
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -51,6 +52,14 @@ describe('ExerciseDetail', () => {
     mockNavigate.mockClear();
     setTempRoutineData([]);
     resetLocalPresets();
+    createPresetSpy.mockReset();
+    createPresetSpy.mockResolvedValue({
+      id: 'routine-1',
+      title: '오늘 루틴',
+      exerciseCount: 1,
+      createdAt: '2026-02-17T10:00:00.000Z',
+      lastUsedAt: null
+    });
   });
 
   afterAll(() => {
@@ -109,8 +118,19 @@ describe('ExerciseDetail', () => {
     await user.type(screen.getByLabelText('루틴 제목'), '오늘 루틴');
     await user.click(screen.getByText('저장'));
 
+    await waitFor(() => {
+      expect(createPresetSpy).toHaveBeenCalledWith(
+        '오늘 루틴',
+        expect.arrayContaining([
+          expect.objectContaining({
+            exerciseId: 'bench-press',
+            exerciseName: '벤치프레스',
+            bodyPart: 'chest'
+          })
+        ])
+      );
+    });
     expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
-    expect(getLocalPresets()[0].title).toBe('오늘 루틴');
 
     const draft = getTempRoutineData();
     expect(draft).toHaveLength(1);
@@ -138,6 +158,22 @@ describe('ExerciseDetail', () => {
       { setNumber: 2, weight: 30, reps: 8 },
       { setNumber: 3, weight: 20, reps: 10 }
     ]);
+  });
+
+  it('저장 실패 시 에러를 표시하고 이동하지 않는다', async () => {
+    const user = userEvent.setup();
+    createPresetSpy.mockRejectedValueOnce(new Error('request failed'));
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await fillSetInput(user, 0, '20', '10');
+    await user.click(screen.getByText('완료'));
+    await user.type(screen.getByLabelText('루틴 제목'), '실패 루틴');
+    await user.click(screen.getByText('저장'));
+
+    expect(
+      await screen.findByText('루틴 저장에 실패했습니다. 다시 시도해주세요.')
+    ).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith('/preset-selection');
   });
 
   it('근력 운동에서 운동 더 추가 클릭 시 선택 화면으로 이동한다', async () => {

@@ -20,9 +20,63 @@ interface RoutineSummaryRow {
   exercises: RoutineExerciseRow[];
 }
 
+export interface RoutineExerciseLookupRow {
+  id: string;
+  code: string;
+}
+
+interface RoutineExerciseSetCreateRow {
+  setNo: number;
+  targetWeightKg?: number;
+  targetReps: number;
+}
+
+interface RoutineExerciseCreateRow {
+  exerciseId: string;
+  metricType: 'set_based' | 'duration_based';
+  targetSets?: number;
+  targetReps?: number;
+  targetWeightKg?: number;
+  targetDurationSeconds?: number;
+  restSeconds?: number;
+  setDetails: RoutineExerciseSetCreateRow[];
+}
+
+export interface RoutineCreateRow {
+  title: string;
+  exercises: RoutineExerciseCreateRow[];
+}
+
+interface RoutineCreatedRow {
+  id: string;
+  title: string;
+  exerciseCount: number;
+  createdAt: Date;
+  lastUsedAt: Date | null;
+}
+
 @Injectable()
 export class RoutinesRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findExercisesByCodes(codes: string[]): Promise<RoutineExerciseLookupRow[]> {
+    if (codes.length === 0) {
+      return [];
+    }
+
+    return this.prisma.exercise.findMany({
+      where: {
+        code: {
+          in: codes
+        },
+        isActive: true
+      },
+      select: {
+        id: true,
+        code: true
+      }
+    });
+  }
 
   async findSummariesByUserId(userId: string): Promise<RoutineSummaryRow[]> {
     const routines = await this.prisma.routine.findMany({
@@ -68,6 +122,52 @@ export class RoutinesRepository {
         title: routine.title,
         exerciseCount: routine.routineExercises.length,
         exercises,
+        createdAt: routine.createdAt,
+        lastUsedAt: routine.lastUsedAt
+      };
+    });
+  }
+
+  async createByUserId(userId: string, row: RoutineCreateRow): Promise<RoutineCreatedRow> {
+    return this.prisma.$transaction(async (tx) => {
+      const routine = await tx.routine.create({
+        data: {
+          userId,
+          title: row.title
+        }
+      });
+
+      for (const [index, exercise] of row.exercises.entries()) {
+        const routineExercise = await tx.routineExercise.create({
+          data: {
+            routineId: routine.id,
+            exerciseId: exercise.exerciseId,
+            orderNo: index + 1,
+            metricType: exercise.metricType,
+            targetSets: exercise.targetSets,
+            targetReps: exercise.targetReps,
+            targetWeightKg: exercise.targetWeightKg,
+            targetDurationSeconds: exercise.targetDurationSeconds,
+            restSeconds: exercise.restSeconds
+          }
+        });
+
+        if (exercise.setDetails.length > 0) {
+          await tx.routineExerciseSet.createMany({
+            data: exercise.setDetails.map((setDetail) => ({
+              routineExerciseId: routineExercise.id,
+              setNo: setDetail.setNo,
+              targetWeightKg: setDetail.targetWeightKg,
+              targetReps: setDetail.targetReps
+            }))
+          });
+        }
+      }
+
+      return {
+        id: routine.id,
+        title: routine.title,
+        exerciseCount: row.exercises.length,
         createdAt: routine.createdAt,
         lastUsedAt: routine.lastUsedAt
       };

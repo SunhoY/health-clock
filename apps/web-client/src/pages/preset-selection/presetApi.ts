@@ -34,6 +34,14 @@ interface RoutineApiResponse {
   lastUsedAt: string | null;
 }
 
+interface CreateRoutineResponse {
+  id: string;
+  title: string;
+  exerciseCount: number;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
 const readAuthSession = (): StoredAuthSession | null => {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
@@ -100,6 +108,35 @@ const toPresetItem = (routine: RoutineApiResponse): PresetItem => ({
   lastUsed: routine.lastUsedAt ? toDate(routine.lastUsedAt) : undefined
 });
 
+const toCreateRoutineRequestExercise = (exercise: ExerciseDetail) => ({
+  exerciseId: exercise.exerciseId,
+  bodyPart: exercise.bodyPart,
+  exerciseName: exercise.exerciseName,
+  sets: exercise.sets,
+  weight: exercise.weight,
+  reps: exercise.reps,
+  duration: exercise.duration,
+  restTime: exercise.restTime,
+  setDetails: exercise.setDetails?.map((setDetail) => ({
+    setNumber: setDetail.setNumber,
+    weight: setDetail.weight,
+    reps: setDetail.reps
+  }))
+});
+
+const tryReadMessage = async (response: Response): Promise<string | undefined> => {
+  try {
+    const payload = (await response.json()) as { message?: string };
+    if (typeof payload === 'object' && payload?.message) {
+      return String(payload.message);
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
+
 export const fetchPresets = async (): Promise<PresetItem[]> => {
   const response = await fetch('/api/routines', {
     headers: {
@@ -120,6 +157,31 @@ export const fetchPresets = async (): Promise<PresetItem[]> => {
   const presets = routines.map(toPresetItem);
   replaceLocalPresets(presets);
   return presets;
+};
+
+export const createPreset = async (
+  title: string,
+  exercises: ExerciseDetail[]
+): Promise<CreateRoutineResponse> => {
+  const response = await fetch('/api/routines', {
+    method: 'POST',
+    headers: {
+      Authorization: buildAuthorizationHeader(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      title,
+      exercises: exercises.map(toCreateRoutineRequestExercise)
+    })
+  });
+
+  if (!response.ok) {
+    const reason = await tryReadMessage(response);
+    throw new Error(reason || '루틴 저장 요청에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as CreateRoutineResponse;
+  return payload;
 };
 
 export const deletePreset = async (presetId: string): Promise<void> => {

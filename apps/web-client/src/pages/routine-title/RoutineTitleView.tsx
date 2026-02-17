@@ -7,6 +7,7 @@ interface RoutineTitleViewProps {
   onTitleChange: (title: string) => void;
   onSave: () => void;
   onCancel: () => void;
+  isSaving?: boolean;
 }
 
 export function RoutineTitleView({
@@ -14,7 +15,8 @@ export function RoutineTitleView({
   titlePlaceholder,
   onTitleChange,
   onSave,
-  onCancel
+  onCancel,
+  isSaving = false
 }: RoutineTitleViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -90,10 +92,10 @@ export function RoutineTitleView({
           </button>
           <button
             onClick={onSave}
-            disabled={!form.isValid}
+            disabled={!form.isValid || isSaving}
             className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
           >
-            저장
+            {isSaving ? '저장 중...' : '저장'}
           </button>
         </div>
       </div>

@@ -2,9 +2,67 @@ import { RoutinesController } from './routines.controller';
 import { RoutinesService } from './routines.service';
 
 describe('RoutinesController', () => {
+  it('should create routine by current user id', async () => {
+    const routinesService = {
+      getRoutineSummariesByUserId: jest.fn(),
+      createRoutineByUserId: jest.fn().mockResolvedValue({
+        id: 'routine-1',
+        title: '상체 루틴',
+        exerciseCount: 2,
+        createdAt: '2026-02-17T10:00:00.000Z',
+        lastUsedAt: null
+      }),
+      deleteRoutineByUserId: jest.fn()
+    } as unknown as RoutinesService;
+
+    const controller = new RoutinesController(routinesService);
+    const result = await controller.createRoutine(
+      {
+        title: '상체 루틴',
+        exercises: [
+          {
+            exerciseId: 'bench-press',
+            exerciseName: '벤치프레스',
+            bodyPart: 'chest',
+            sets: 4,
+            reps: 8,
+            weight: 80
+          }
+        ]
+      },
+      {
+        id: 'user-1',
+        email: 'user@example.com',
+        provider: 'google'
+      }
+    );
+
+    expect(routinesService.createRoutineByUserId).toHaveBeenCalledWith('user-1', {
+      title: '상체 루틴',
+      exercises: [
+        {
+          exerciseId: 'bench-press',
+          exerciseName: '벤치프레스',
+          bodyPart: 'chest',
+          sets: 4,
+          reps: 8,
+          weight: 80
+        }
+      ]
+    });
+    expect(result).toEqual({
+      id: 'routine-1',
+      title: '상체 루틴',
+      exerciseCount: 2,
+      createdAt: '2026-02-17T10:00:00.000Z',
+      lastUsedAt: null
+    });
+  });
+
   it('should delete routine by current user id', async () => {
     const routinesService = {
       getRoutineSummariesByUserId: jest.fn(),
+      createRoutineByUserId: jest.fn(),
       deleteRoutineByUserId: jest.fn().mockResolvedValue(undefined)
     } as unknown as RoutinesService;
 
@@ -40,6 +98,7 @@ describe('RoutinesController', () => {
           lastUsedAt: null
         }
       ]),
+      createRoutineByUserId: jest.fn(),
       deleteRoutineByUserId: jest.fn()
     } as unknown as RoutinesService;
 
