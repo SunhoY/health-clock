@@ -3,7 +3,10 @@
     "../../.eslintrc.json"
   ],
   "ignorePatterns": [
-    "!**/*"
+    "!**/*",
+    "dist",
+    "out-tsc",
+    "node_modules"
   ],
   "overrides": [
     {

@@ -1,9 +1,17 @@
 pre-push:
   jobs:
     - name: lint
-      run: pnpm nx run-many --target=lint --all
-    - name: typecheck
-      run: pnpm nx run-many --target=typecheck --all
+      run: CI=true NX_DAEMON=false pnpm nx run-many --target=lint --all --outputStyle=static
+    - name: typecheck-web-app
+      run: CI=true pnpm exec tsc -p apps/web-client/tsconfig.app.json --noEmit
+    - name: typecheck-web-spec
+      run: CI=true pnpm exec tsc --build apps/web-client/tsconfig.spec.json --pretty false
+    - name: typecheck-web-storybook
+      run: CI=true pnpm exec tsc --build apps/web-client/tsconfig.storybook.json --pretty false
+    - name: typecheck-backend-app
+      run: CI=true pnpm exec tsc -p apps/nest-backend/tsconfig.app.json --noEmit
+    - name: typecheck-backend-spec
+      run: CI=true pnpm exec tsc --build apps/nest-backend/tsconfig.spec.json --pretty false
     - name: test
-      run: pnpm nx run-many --target=test --all
+      run: CI=true NX_DAEMON=false pnpm nx run-many --target=test --all --outputStyle=static
     

@@ -1,9 +1,12 @@
 import { Body, Controller, Get, Post, Res } from '@nestjs/common';
-import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthProviderDto } from './dto/auth-provider.dto';
-import { GoogleAuthExchangeRequestDto } from './dto/google-auth-exchange-request.dto';
-import { GoogleAuthExchangeResponseDto } from './dto/google-auth-exchange-response.dto';
+import type { GoogleAuthExchangeRequestDto } from './dto/google-auth-exchange-request.dto';
+import type { GoogleAuthExchangeResponseDto } from './dto/google-auth-exchange-response.dto';
+
+interface RedirectResponse {
+  redirect: (statusCode: number, url: string) => void;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -15,7 +18,7 @@ export class AuthController {
   }
 
   @Get('google/start')
-  startGoogleAuth(@Res() response: Response): void {
+  startGoogleAuth(@Res() response: RedirectResponse): void {
     const authUrl = this.authService.createGoogleAuthStartUrl();
     response.redirect(302, authUrl);
   }
