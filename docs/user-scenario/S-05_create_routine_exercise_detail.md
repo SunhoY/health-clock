@@ -59,10 +59,17 @@
 * 편집 모드에서 수정 후 저장하면 해당 운동 항목만 갱신되고, 같은 루틴의 다른 운동 정보는 유지된다
 * 편집 모드에서 신규 운동으로 진입한 경우 `[완료]` 시 기존 루틴에 새로운 운동 항목이 추가된다
 * 생성/편집 모두 입력값은 화면 state가 아닌 루틴 ViewModel에 즉시 반영된다
-* 편집 모드에서 `[완료]` 클릭 시 API 호출로 저장한다
-  * 기존 운동 수정: `PATCH /api/routines/:routineId/exercises/:routineExerciseId`
-  * 신규 운동 추가: `POST /api/routines/:routineId/exercises`
-  * 성공: S-02로 이동 후 `GET /api/routines` 재조회 결과 반영
+* 생성 모드 저장은 실행 모드별로 분기한다
+  * 인증 모드: 루틴 생성 API 호출 (`POST /api/routines`)
+  * 게스트 모드: 로컬 스토리지에 루틴/운동/세트 정보 저장
+* 편집 모드에서 `[완료]` 클릭 시 실행 모드별 저장소로 저장한다
+  * 인증 모드
+    * 기존 운동 수정: `PATCH /api/routines/:routineId/exercises/:routineExerciseId`
+    * 신규 운동 추가: `POST /api/routines/:routineId/exercises`
+  * 게스트 모드
+    * 기존 운동 수정: 로컬 스토리지 갱신
+    * 신규 운동 추가: 로컬 스토리지 append
+  * 성공: S-02로 이동 후 실행 모드 저장소 재조회 결과 반영
   * 실패: 에러 문구를 노출하고 현재 입력 화면 유지
 * 초기 상태에서 각 세트의 중량/횟수는 `undefined`로 취급된다
 * 특정 세트에 값이 입력되면, 아직 한 번도 입력되지 않은(= `undefined`) 다른 세트의 같은 항목은 해당 값으로 자동 채워진다
