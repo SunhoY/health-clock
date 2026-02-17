@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
-import { BodyPartDto } from './dto/body-part.dto';
-import { CreateBodyPartRequestDto } from './dto/create-body-part.dto';
-import { BodyPartExerciseDto } from './dto/body-part-exercise.dto';
-import { CreateBodyPartExerciseRequestDto } from './dto/create-body-part-exercise.dto';
+import type { BodyPartDto } from './dto/body-part.dto';
+import type { CreateBodyPartRequestDto } from './dto/create-body-part.dto';
+import type { BodyPartExerciseDto } from './dto/body-part-exercise.dto';
+import type { CreateBodyPartExerciseRequestDto } from './dto/create-body-part-exercise.dto';
 import { ExercisesService } from './exercises.service';
 
 @Controller()

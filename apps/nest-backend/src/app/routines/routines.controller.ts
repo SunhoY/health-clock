@@ -12,12 +12,12 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { BearerAuthGuard } from '../auth/guards/bearer-auth.guard';
 import { type AuthenticatedUser } from '../auth/types/authenticated-user.type';
-import {
+import type {
   CreateRoutineRequestDto,
   CreateRoutineResponseDto
 } from './dto/create-routine.dto';
-import { RoutineSummaryDto } from './dto/routine-summary.dto';
-import {
+import type { RoutineSummaryDto } from './dto/routine-summary.dto';
+import type {
   AppendRoutineExerciseResponseDto,
   UpsertRoutineExerciseRequestDto
 } from './dto/upsert-routine-exercise.dto';
