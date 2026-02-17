@@ -22,6 +22,24 @@ export interface BodyPartCreateRow {
   isActive: boolean;
 }
 
+export interface ExerciseCatalogRow {
+  code: string;
+  name: string;
+  bodyPart: string;
+  exerciseType: string;
+  equipment: string[];
+  difficulty: string | null;
+}
+
+export interface ExerciseCreateRow {
+  code: string;
+  name: string;
+  bodyPart: string;
+  exerciseType: string;
+  equipment: string[];
+  difficulty?: string;
+}
+
 @Injectable()
 export class ExercisesRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -64,6 +82,28 @@ export class ExercisesRepository {
     `);
   }
 
+  async findActiveBodyPartById(id: string): Promise<BodyPartRow | null> {
+    await this.ensureBodyPartTable();
+
+    const rows = await this.prisma.$queryRawUnsafe<BodyPartRow[]>(
+      `
+        SELECT
+          id,
+          name,
+          sort_order AS "sortOrder",
+          is_active AS "isActive",
+          created_at AS "createdAt"
+        FROM body_parts
+        WHERE id = $1
+          AND is_active = true
+        LIMIT 1
+      `,
+      id
+    );
+
+    return rows[0] ?? null;
+  }
+
   async existsByIdOrName(id: string, name: string): Promise<boolean> {
     await this.ensureBodyPartTable();
 
@@ -102,6 +142,65 @@ export class ExercisesRepository {
     );
 
     return rows[0];
+  }
+
+  async findActiveExercisesByBodyPart(
+    bodyPartId: string
+  ): Promise<ExerciseCatalogRow[]> {
+    return this.prisma.exercise.findMany({
+      where: {
+        bodyPart: bodyPartId,
+        isActive: true
+      },
+      orderBy: {
+        name: 'asc'
+      },
+      select: {
+        code: true,
+        name: true,
+        bodyPart: true,
+        exerciseType: true,
+        equipment: true,
+        difficulty: true
+      }
+    });
+  }
+
+  async createExercise(row: ExerciseCreateRow): Promise<ExerciseCatalogRow> {
+    return this.prisma.exercise.create({
+      data: {
+        code: row.code,
+        name: row.name,
+        bodyPart: row.bodyPart,
+        exerciseType: row.exerciseType,
+        equipment: row.equipment,
+        difficulty: row.difficulty,
+        isActive: true
+      },
+      select: {
+        code: true,
+        name: true,
+        bodyPart: true,
+        exerciseType: true,
+        equipment: true,
+        difficulty: true
+      }
+    });
+  }
+
+  async deactivateExerciseByCode(code: string): Promise<boolean> {
+    const result = await this.prisma.exercise.updateMany({
+      where: {
+        code,
+        isActive: true
+      },
+      data: {
+        isActive: false,
+        updatedAt: new Date()
+      }
+    });
+
+    return result.count > 0;
   }
 
   private async getNextSortOrder(): Promise<number> {

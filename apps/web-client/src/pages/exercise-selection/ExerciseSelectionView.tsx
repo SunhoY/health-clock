@@ -6,6 +6,9 @@ interface ExerciseSelectionViewProps {
   exercises: Exercise[];
   title?: string;
   emptyMessage?: string;
+  isLoading?: boolean;
+  loadError?: string | null;
+  onRetry?: () => void;
   onExerciseSelect: (exercise: Exercise) => void;
   isEditMode?: boolean;
   onEditExercise?: (exercise: Exercise) => void;
@@ -18,6 +21,9 @@ export function ExerciseSelectionView({
   exercises,
   title,
   emptyMessage,
+  isLoading = false,
+  loadError = null,
+  onRetry,
   onExerciseSelect,
   isEditMode = false,
   onEditExercise,
@@ -79,7 +85,24 @@ export function ExerciseSelectionView({
         </div>
 
         <div className="space-y-3">
-          {exercises.length > 0 ? (
+          {isLoading ? (
+            <div className="rounded-2xl border border-gray-700 bg-gray-800 px-4 py-10 text-center">
+              <p className="text-base text-gray-400">운동 목록을 불러오는 중입니다.</p>
+            </div>
+          ) : loadError ? (
+            <div className="rounded-2xl border border-rose-900 bg-gray-800 px-4 py-10 text-center">
+              <p className="text-base text-rose-300">{loadError}</p>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="mt-4 rounded-full bg-gray-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950"
+                >
+                  다시 시도
+                </button>
+              )}
+            </div>
+          ) : exercises.length > 0 ? (
             exercises.map((exercise) => (
               <div key={exercise.id} className="relative">
                 <button

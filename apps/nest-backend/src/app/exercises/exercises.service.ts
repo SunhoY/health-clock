@@ -1,12 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
-  Injectable
+  Injectable,
+  NotFoundException
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { BodyPartDto } from './dto/body-part.dto';
 import { CreateBodyPartRequestDto } from './dto/create-body-part.dto';
+import { BodyPartExerciseDto } from './dto/body-part-exercise.dto';
+import { CreateBodyPartExerciseRequestDto } from './dto/create-body-part-exercise.dto';
 import {
   BodyPartCreateRow,
+  ExerciseCreateRow,
   BodyPartSeedRow,
   ExercisesRepository
 } from './exercises.repository';
@@ -54,6 +59,60 @@ export class ExercisesService {
       id: created.id,
       name: created.name
     };
+  }
+
+  async getExercisesByBodyPartId(
+    bodyPartIdRaw: string
+  ): Promise<BodyPartExerciseDto[]> {
+    const bodyPartId = this.toBodyPartId(bodyPartIdRaw);
+    await this.ensureBodyPartExists(bodyPartId);
+    const rows = await this.exercisesRepository.findActiveExercisesByBodyPart(
+      bodyPartId
+    );
+
+    return rows.map((row) => this.toBodyPartExerciseDto(row));
+  }
+
+  async createExerciseByBodyPartId(
+    bodyPartIdRaw: string,
+    payload: CreateBodyPartExerciseRequestDto
+  ): Promise<BodyPartExerciseDto> {
+    const bodyPartId = this.toBodyPartId(bodyPartIdRaw);
+    await this.ensureBodyPartExists(bodyPartId);
+
+    const row: ExerciseCreateRow = {
+      code: this.toExerciseCode(payload?.code),
+      name: this.toExerciseName(payload?.name),
+      bodyPart: bodyPartId,
+      exerciseType: this.toExerciseType(payload?.exerciseType),
+      equipment: this.toExerciseEquipment(payload?.equipment),
+      difficulty: this.toDifficulty(payload?.difficulty)
+    };
+
+    try {
+      const created = await this.exercisesRepository.createExercise(row);
+      return this.toBodyPartExerciseDto(created);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Exercise code already exists.');
+      }
+
+      throw error;
+    }
+  }
+
+  async deleteExerciseByCode(exerciseCodeRaw: string): Promise<void> {
+    const exerciseCode = this.toExerciseCode(exerciseCodeRaw);
+    const deactivated = await this.exercisesRepository.deactivateExerciseByCode(
+      exerciseCode
+    );
+
+    if (!deactivated) {
+      throw new NotFoundException('Exercise not found.');
+    }
   }
 
   private toBodyPartCreateRow(payload: CreateBodyPartRequestDto): BodyPartCreateRow {
@@ -120,6 +179,130 @@ export class ExercisesService {
     }
 
     return value;
+  }
+
+  private async ensureBodyPartExists(bodyPartId: string): Promise<void> {
+    await this.exercisesRepository.ensureDefaultBodyParts(DEFAULT_BODY_PARTS);
+    const bodyPart =
+      await this.exercisesRepository.findActiveBodyPartById(bodyPartId);
+    if (!bodyPart) {
+      throw new NotFoundException('Body part not found.');
+    }
+  }
+
+  private toExerciseCode(value: unknown): string {
+    if (typeof value !== 'string') {
+      throw new BadRequestException('code is required.');
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (!/^[a-z0-9-]+$/.test(normalized)) {
+      throw new BadRequestException(
+        'code must contain only lowercase letters, numbers, and hyphens.'
+      );
+    }
+
+    return normalized;
+  }
+
+  private toExerciseName(value: unknown): string {
+    if (typeof value !== 'string') {
+      throw new BadRequestException('name is required.');
+    }
+
+    const normalized = value.trim();
+    if (!normalized) {
+      throw new BadRequestException('name is required.');
+    }
+
+    return normalized;
+  }
+
+  private toExerciseType(value: unknown): string {
+    if (typeof value !== 'string') {
+      throw new BadRequestException('exerciseType is required.');
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized !== 'strength' && normalized !== 'cardio') {
+      throw new BadRequestException(
+        'exerciseType must be one of: strength, cardio.'
+      );
+    }
+
+    return normalized;
+  }
+
+  private toExerciseEquipment(value: unknown): string[] {
+    if (value === null || value === undefined) {
+      return [];
+    }
+
+    if (!Array.isArray(value)) {
+      throw new BadRequestException('equipment must be an array of strings.');
+    }
+
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  }
+
+  private toDifficulty(
+    value: unknown
+  ): 'beginner' | 'intermediate' | 'advanced' | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value !== 'string') {
+      throw new BadRequestException('difficulty must be a string value.');
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (
+      normalized !== 'beginner' &&
+      normalized !== 'intermediate' &&
+      normalized !== 'advanced'
+    ) {
+      throw new BadRequestException(
+        'difficulty must be one of: beginner, intermediate, advanced.'
+      );
+    }
+
+    return normalized;
+  }
+
+  private toBodyPartExerciseDto(value: {
+    code: string;
+    name: string;
+    bodyPart: string;
+    exerciseType: string;
+    equipment: string[];
+    difficulty: string | null;
+  }): BodyPartExerciseDto {
+    return {
+      code: value.code,
+      name: value.name,
+      bodyPart: value.bodyPart,
+      exerciseType: value.exerciseType,
+      equipment: value.equipment,
+      difficulty: this.normalizeDifficulty(value.difficulty)
+    };
+  }
+
+  private normalizeDifficulty(
+    value: string | null
+  ): 'beginner' | 'intermediate' | 'advanced' | undefined {
+    if (
+      value === 'beginner' ||
+      value === 'intermediate' ||
+      value === 'advanced'
+    ) {
+      return value;
+    }
+
+    return undefined;
   }
 
 }

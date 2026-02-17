@@ -1,10 +1,10 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { ExerciseSelectionView } from './ExerciseSelectionView';
-import { EXERCISES_DATA } from '../../types/exercise';
 import { Exercise } from '../../types/exercise';
 import { deletePresetExercise, fetchPresetById } from '../preset-selection/presetApi';
-import { useEffect, useMemo, useState } from 'react';
 import { PresetExercise } from '../preset-selection/presetStore';
+import { fetchExercisesByBodyPart } from './exerciseApi';
 
 interface ExerciseSelectionRouteState {
   mode?: 'create' | 'edit';
@@ -30,29 +30,10 @@ const findExerciseByPreset = (presetExercise: PresetExercise): Exercise => {
     랫풀다운: '렛풀다운'
   };
 
-  const normalizedBodyPart = bodyPartAlias[presetExercise.part] ?? presetExercise.part;
+  const normalizedBodyPart =
+    bodyPartAlias[presetExercise.part] ?? presetExercise.part;
   const normalizedExerciseName =
     exerciseNameAlias[presetExercise.name] ?? presetExercise.name;
-  const byBodyPart = EXERCISES_DATA[presetExercise.part] || [];
-  const inBodyPart = EXERCISES_DATA[normalizedBodyPart] || byBodyPart;
-  const byName = inBodyPart.find((exercise) => exercise.name === normalizedExerciseName);
-  if (byName) {
-    return byName;
-  }
-
-  const byAll = Object.values(EXERCISES_DATA)
-    .flat()
-    .find(
-      (exercise) =>
-        exercise.name === presetExercise.name ||
-        exercise.name === normalizedExerciseName ||
-        exercise.name.includes(presetExercise.name) ||
-        presetExercise.name.includes(exercise.name)
-    );
-
-  if (byAll) {
-    return byAll;
-  }
 
   return {
     id: presetExercise.id,
@@ -68,6 +49,9 @@ export function ExerciseSelection() {
   const routeState = (location.state as ExerciseSelectionRouteState | null) ?? null;
   const isEditMode = routeState?.mode === 'edit' && Boolean(routeState?.presetId);
   const [editExercises, setEditExercises] = useState<Exercise[]>([]);
+  const [createExercises, setCreateExercises] = useState<Exercise[]>([]);
+  const [isCreateLoading, setIsCreateLoading] = useState(false);
+  const [createLoadError, setCreateLoadError] = useState<string | null>(null);
 
   const selectedBodyPart = bodyPart || 'chest';
   const exercises = useMemo(() => {
@@ -75,8 +59,24 @@ export function ExerciseSelection() {
       return editExercises;
     }
 
-    return EXERCISES_DATA[selectedBodyPart] || [];
-  }, [editExercises, isEditMode, selectedBodyPart]);
+    return createExercises;
+  }, [createExercises, editExercises, isEditMode]);
+
+  const loadCreateExercises = useCallback(async (targetBodyPart: string) => {
+    setIsCreateLoading(true);
+    setCreateLoadError(null);
+
+    try {
+      const response = await fetchExercisesByBodyPart(targetBodyPart);
+      setCreateExercises(response);
+    } catch (error) {
+      console.error('운동 목록 조회에 실패했습니다.', error);
+      setCreateExercises([]);
+      setCreateLoadError('운동 목록을 불러오지 못했습니다.');
+    } finally {
+      setIsCreateLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -101,19 +101,27 @@ export function ExerciseSelection() {
     };
   }, [isEditMode, routeState?.presetId]);
 
+  useEffect(() => {
+    if (isEditMode) {
+      setCreateExercises([]);
+      setCreateLoadError(null);
+      setIsCreateLoading(false);
+      return;
+    }
+
+    void loadCreateExercises(selectedBodyPart);
+  }, [isEditMode, loadCreateExercises, selectedBodyPart]);
+
   const handleExerciseSelect = (exercise: Exercise) => {
-    console.log('Selected exercise:', exercise);
     navigate(`/exercise-detail/${exercise.bodyPart}/${exercise.id}`, {
       state: {
         mode: isEditMode ? 'edit' : 'create',
         presetId: routeState?.presetId,
-        presetExercise: isEditMode
-          ? {
-              id: exercise.id,
-              name: exercise.name,
-              part: exercise.bodyPart
-            }
-          : undefined
+        presetExercise: {
+          id: exercise.id,
+          name: exercise.name,
+          part: exercise.bodyPart
+        }
       }
     });
   };
@@ -139,6 +147,15 @@ export function ExerciseSelection() {
       onEditExercise={handleExerciseSelect}
       onDeleteExercise={isEditMode ? handleDeleteExercise : undefined}
       onBack={isEditMode ? () => navigate(-1) : undefined}
+      isLoading={!isEditMode && isCreateLoading}
+      loadError={!isEditMode ? createLoadError : null}
+      onRetry={
+        isEditMode
+          ? undefined
+          : () => {
+              void loadCreateExercises(selectedBodyPart);
+            }
+      }
     />
   );
-} 
+}

@@ -24,6 +24,7 @@ const mockOnExerciseSelect = jest.fn();
 const mockOnEditExercise = jest.fn();
 const mockOnDeleteExercise = jest.fn();
 const mockOnBack = jest.fn();
+const mockOnRetry = jest.fn();
 
 describe('ExerciseSelectionView', () => {
   beforeEach(() => {
@@ -31,6 +32,7 @@ describe('ExerciseSelectionView', () => {
     mockOnEditExercise.mockClear();
     mockOnDeleteExercise.mockClear();
     mockOnBack.mockClear();
+    mockOnRetry.mockClear();
   });
 
   it('선택된 부위명이 제목에 올바르게 표시된다', () => {
@@ -84,6 +86,41 @@ describe('ExerciseSelectionView', () => {
     );
 
     expect(screen.getByText('선택된 부위에 해당하는 운동이 없습니다.')).toBeInTheDocument();
+  });
+
+  it('로딩 상태일 때 로딩 문구를 표시한다', () => {
+    render(
+      <ExerciseSelectionView
+        selectedBodyPart="chest"
+        exercises={[]}
+        isLoading
+        onExerciseSelect={mockOnExerciseSelect}
+      />
+    );
+
+    expect(screen.getByText('운동 목록을 불러오는 중입니다.')).toBeInTheDocument();
+    expect(
+      screen.queryByText('선택된 부위에 해당하는 운동이 없습니다.')
+    ).not.toBeInTheDocument();
+  });
+
+  it('에러 상태일 때 재시도 버튼을 표시하고 동작한다', async () => {
+    const user = userEvent.setup();
+    render(
+      <ExerciseSelectionView
+        selectedBodyPart="chest"
+        exercises={[]}
+        loadError="운동 목록을 불러오지 못했습니다."
+        onRetry={mockOnRetry}
+        onExerciseSelect={mockOnExerciseSelect}
+      />
+    );
+
+    expect(
+      screen.getByText('운동 목록을 불러오지 못했습니다.')
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    expect(mockOnRetry).toHaveBeenCalledTimes(1);
   });
 
   it('운동 목록에는 운동명만 표시된다', () => {

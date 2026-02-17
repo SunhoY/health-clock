@@ -166,8 +166,17 @@ export function ExerciseDetail() {
     const foundExercise =
       exercises.find((ex) => ex.id === exerciseId) ||
       exercises.find((ex) => ex.name === normalizedPresetName);
-    setExercise(foundExercise || null);
-  }, [bodyPart, exerciseId, routeState?.presetExercise?.name]);
+    const fallbackExercise =
+      routeState?.presetExercise &&
+      routeState.presetExercise.id === exerciseId
+        ? {
+            id: routeState.presetExercise.id,
+            name: normalizedPresetName ?? routeState.presetExercise.name,
+            bodyPart: normalizedBodyPart
+          }
+        : null;
+    setExercise(foundExercise ?? fallbackExercise ?? null);
+  }, [bodyPart, exerciseId, routeState?.presetExercise?.id, routeState?.presetExercise?.name]);
 
   useEffect(() => {
     if (!isEditMode || !exercise || !routeState?.presetId) {
