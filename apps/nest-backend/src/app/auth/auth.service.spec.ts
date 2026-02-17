@@ -1,5 +1,9 @@
 import axios from 'axios';
-import { BadGatewayException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  UnauthorizedException
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
@@ -97,6 +101,18 @@ describe('AuthService', () => {
       expect(first).toBeTruthy();
       expect(second).toBeTruthy();
       expect(first).not.toEqual(second);
+    });
+
+    it('should reject start url generation when origin is missing', () => {
+      expect(() => service.createGoogleAuthStartUrl()).toThrow(
+        BadRequestException
+      );
+    });
+
+    it('should reject start url generation when origin is malformed', () => {
+      expect(() => service.createGoogleAuthStartUrl('not-a-url')).toThrow(
+        BadRequestException
+      );
     });
   });
 

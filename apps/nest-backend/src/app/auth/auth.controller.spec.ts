@@ -80,6 +80,26 @@ describe('AuthController', () => {
       );
       expect(new URL(location).searchParams.get('state')).toBe('state123');
     });
+
+    it('should ignore host/referer headers when origin is missing', () => {
+      const controller = app.get<AuthController>(AuthController);
+      const redirect = jest.fn();
+
+      controller.startGoogleAuth(
+        {
+          headers: {
+            host: 'localhost:4200',
+            referer: 'http://localhost:4200/somewhere'
+          }
+        } as never,
+        { redirect } as never
+      );
+
+      expect(authService.createGoogleAuthStartUrl).toHaveBeenCalledWith(
+        undefined
+      );
+      expect(redirect).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('exchangeGoogleAuthCode', () => {

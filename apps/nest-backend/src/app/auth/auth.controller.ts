@@ -40,29 +40,7 @@ export class AuthController {
   }
 
   private getRequestOrigin(request: RequestLike): string | undefined {
-    const origin = this.getHeaderValue(request, 'origin');
-    if (origin) {
-      return origin;
-    }
-
-    const referer = this.getHeaderValue(request, 'referer');
-    if (referer) {
-      try {
-        return new URL(referer).origin;
-      } catch {
-        // ignore invalid referer and continue with forwarded/host headers
-      }
-    }
-
-    const forwardedHost = this.getHeaderValue(request, 'x-forwarded-host');
-    const host = forwardedHost ?? this.getHeaderValue(request, 'host');
-    if (!host) {
-      return undefined;
-    }
-
-    const forwardedProto =
-      this.getHeaderValue(request, 'x-forwarded-proto') ?? 'http';
-    return `${forwardedProto}://${host}`;
+    return this.getHeaderValue(request, 'origin');
   }
 
   private getHeaderValue(

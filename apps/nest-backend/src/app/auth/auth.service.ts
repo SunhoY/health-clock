@@ -224,19 +224,14 @@ export class AuthService {
   }
 
   private resolveGoogleRedirectUri(requestOrigin?: string): string {
-    const configuredRedirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim();
-    if (configuredRedirectUri) {
-      return configuredRedirectUri;
-    }
-
     if (requestOrigin?.trim()) {
       try {
         return `${new URL(requestOrigin).origin}/auth/google/loggedIn`;
       } catch {
-        // fallback to default local redirect uri when header is malformed
+        throw new BadRequestException('Invalid request origin for OAuth redirect.');
       }
     }
 
-    return 'http://localhost:4200/auth/google/loggedIn';
+    throw new BadRequestException('Unable to resolve OAuth redirect origin.');
   }
 }
