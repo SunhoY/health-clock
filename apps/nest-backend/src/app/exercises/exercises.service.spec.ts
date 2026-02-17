@@ -15,6 +15,7 @@ describe('ExercisesService', () => {
           createdAt: new Date('2026-02-17T10:00:00.000Z')
         }
       ]),
+      existsByIdOrName: jest.fn(),
       createBodyPart: jest.fn()
     } as unknown as ExercisesRepository;
 
@@ -30,6 +31,7 @@ describe('ExercisesService', () => {
     const exercisesRepository = {
       ensureDefaultBodyParts: jest.fn().mockResolvedValue(undefined),
       findActiveBodyParts: jest.fn(),
+      existsByIdOrName: jest.fn().mockResolvedValue(false),
       createBodyPart: jest.fn().mockResolvedValue({
         id: 'glutes',
         name: '둔근',
@@ -58,6 +60,7 @@ describe('ExercisesService', () => {
     const exercisesRepository = {
       ensureDefaultBodyParts: jest.fn().mockResolvedValue(undefined),
       findActiveBodyParts: jest.fn(),
+      existsByIdOrName: jest.fn(),
       createBodyPart: jest.fn()
     } as unknown as ExercisesRepository;
 
@@ -76,7 +79,8 @@ describe('ExercisesService', () => {
     const exercisesRepository = {
       ensureDefaultBodyParts: jest.fn().mockResolvedValue(undefined),
       findActiveBodyParts: jest.fn(),
-      createBodyPart: jest.fn().mockRejectedValue({ code: 'P2002' })
+      existsByIdOrName: jest.fn().mockResolvedValue(true),
+      createBodyPart: jest.fn()
     } as unknown as ExercisesRepository;
 
     const service = new ExercisesService(exercisesRepository);
@@ -87,5 +91,6 @@ describe('ExercisesService', () => {
         name: '둔근'
       })
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(exercisesRepository.createBodyPart).not.toHaveBeenCalled();
   });
 });

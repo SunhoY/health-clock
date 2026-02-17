@@ -41,19 +41,19 @@ export class ExercisesService {
     await this.exercisesRepository.ensureDefaultBodyParts(DEFAULT_BODY_PARTS);
     const row = this.toBodyPartCreateRow(payload);
 
-    try {
-      const created = await this.exercisesRepository.createBodyPart(row);
-      return {
-        id: created.id,
-        name: created.name
-      };
-    } catch (error) {
-      if (this.isUniqueConstraintError(error)) {
-        throw new ConflictException('Body part already exists.');
-      }
-
-      throw error;
+    const alreadyExists = await this.exercisesRepository.existsByIdOrName(
+      row.id,
+      row.name
+    );
+    if (alreadyExists) {
+      throw new ConflictException('Body part already exists.');
     }
+
+    const created = await this.exercisesRepository.createBodyPart(row);
+    return {
+      id: created.id,
+      name: created.name
+    };
   }
 
   private toBodyPartCreateRow(payload: CreateBodyPartRequestDto): BodyPartCreateRow {
@@ -122,16 +122,4 @@ export class ExercisesService {
     return value;
   }
 
-  private isUniqueConstraintError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') {
-      return false;
-    }
-
-    return (
-      'code' in error &&
-      (error as {
-        code?: unknown;
-      }).code === 'P2002'
-    );
-  }
 }
