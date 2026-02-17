@@ -146,6 +146,7 @@ export function ExerciseDetail() {
   const [pendingCompleteExercise, setPendingCompleteExercise] = useState<ExerciseDetailModel | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [isActionPending, setIsActionPending] = useState(false);
   const [titleForm, setTitleForm] = useState<RoutineTitleForm>({
     title: '',
     isValid: false,
@@ -461,8 +462,15 @@ export function ExerciseDetail() {
   };
 
   const saveCurrentExercise = (mode: 'add' | 'complete') => {
+    if (isActionPending) {
+      return;
+    }
+
     if (isEditMode && mode === 'complete') {
-      void completeEdit();
+      setIsActionPending(true);
+      void completeEdit().finally(() => {
+        setIsActionPending(false);
+      });
       return;
     }
 
@@ -477,8 +485,10 @@ export function ExerciseDetail() {
     }
 
     if (isEditMode) {
+      setIsActionPending(true);
       const saved = saveEditDraft(detail);
       if (!saved) {
+        setIsActionPending(false);
         return;
       }
 
@@ -491,6 +501,7 @@ export function ExerciseDetail() {
       return;
     }
 
+    setIsActionPending(true);
     appendTempRoutineData(detail);
     console.log('운동 추가:', detail);
     navigate(`/exercise-selection/${bodyPart ?? detail.bodyPart}`);
@@ -526,6 +537,7 @@ export function ExerciseDetail() {
         onAddExercise={() => saveCurrentExercise('add')}
         onCompleteRoutine={() => saveCurrentExercise('complete')}
         secondaryActionLabel={isEditMode ? '다른 운동 수정하기' : '운동 더 추가'}
+        isActionPending={isActionPending}
       />
       {isTitleDialogOpen && (
         <RoutineTitleView

@@ -187,6 +187,25 @@ describe('ExerciseDetail', () => {
     expect(getTempRoutineData()).toHaveLength(1);
   });
 
+  it('근력 운동에서 운동 더 추가를 연속 클릭해도 동일 운동이 중복 저장되지 않는다', async () => {
+    const user = userEvent.setup();
+    renderWithRoute('/exercise-detail/chest/bench-press');
+
+    await fillSetInput(user, 0, '20', '10');
+    const addButton = screen.getByText('운동 더 추가');
+    await user.click(addButton);
+    await user.click(addButton);
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(getTempRoutineData()).toHaveLength(1);
+    expect(getTempRoutineData()[0]).toEqual(
+      expect.objectContaining({
+        exerciseId: 'bench-press',
+        exerciseName: '벤치프레스'
+      })
+    );
+  });
+
   it('중량/횟수 증감 버튼이 동작한다', async () => {
     const user = userEvent.setup();
     renderWithRoute('/exercise-detail/chest/bench-press');

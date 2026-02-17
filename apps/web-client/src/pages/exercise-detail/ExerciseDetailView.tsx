@@ -25,6 +25,7 @@ interface ExerciseDetailViewProps {
   onAddExercise: () => void;
   onCompleteRoutine: () => void;
   secondaryActionLabel?: string;
+  isActionPending?: boolean;
 }
 
 export function ExerciseDetailView({
@@ -43,7 +44,8 @@ export function ExerciseDetailView({
   onDurationInputChange,
   onAddExercise,
   onCompleteRoutine,
-  secondaryActionLabel
+  secondaryActionLabel,
+  isActionPending = false
 }: ExerciseDetailViewProps) {
   const canDecreaseSets = setCount > setRange.min;
   const canIncreaseSets = setCount < setRange.max;
@@ -194,7 +196,7 @@ export function ExerciseDetailView({
             <button
               type="button"
               onClick={onAddExercise}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isActionPending}
               className="rounded-xl border border-gray-600 bg-gray-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:border-gray-800 disabled:bg-gray-900 disabled:text-gray-600"
             >
               {secondaryActionLabel ?? '운동 더 추가'}
@@ -202,7 +204,7 @@ export function ExerciseDetailView({
             <button
               type="button"
               onClick={onCompleteRoutine}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isActionPending}
               className="rounded-xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-500"
             >
               완료
