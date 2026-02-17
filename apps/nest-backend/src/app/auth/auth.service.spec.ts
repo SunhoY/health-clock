@@ -36,7 +36,7 @@ describe('AuthService', () => {
 
   describe('createGoogleAuthStartUrl', () => {
     it('should return google oauth authorize url with required params', () => {
-      const url = service.createGoogleAuthStartUrl();
+      const url = service.createGoogleAuthStartUrl('http://localhost:4200');
       const parsed = new URL(url);
 
       expect(`${parsed.origin}${parsed.pathname}`).toBe(
@@ -53,19 +53,19 @@ describe('AuthService', () => {
 
     it('should use GOOGLE_OAUTH_CLIENT_ID from environment when provided', () => {
       process.env.GOOGLE_OAUTH_CLIENT_ID = 'test-client-id';
-      const url = service.createGoogleAuthStartUrl();
+      const url = service.createGoogleAuthStartUrl('http://localhost:4200');
       const parsed = new URL(url);
 
       expect(parsed.searchParams.get('client_id')).toBe('test-client-id');
     });
 
     it('should issue a unique state for every start url generation', () => {
-      const first = new URL(service.createGoogleAuthStartUrl()).searchParams.get(
-        'state'
-      );
-      const second = new URL(service.createGoogleAuthStartUrl()).searchParams.get(
-        'state'
-      );
+      const first = new URL(
+        service.createGoogleAuthStartUrl('http://localhost:4200')
+      ).searchParams.get('state');
+      const second = new URL(
+        service.createGoogleAuthStartUrl('http://localhost:4200')
+      ).searchParams.get('state');
 
       expect(first).toBeTruthy();
       expect(second).toBeTruthy();
@@ -75,7 +75,9 @@ describe('AuthService', () => {
 
   describe('exchangeGoogleAuthCode', () => {
     it('should exchange auth code to google tokens when state is valid', async () => {
-      const createdUrl = new URL(service.createGoogleAuthStartUrl());
+      const createdUrl = new URL(
+        service.createGoogleAuthStartUrl('http://localhost:4200')
+      );
       const state = createdUrl.searchParams.get('state');
       const axiosPostSpy = jest.spyOn(axios, 'post').mockResolvedValue({
         data: {
@@ -96,6 +98,9 @@ describe('AuthService', () => {
       expect(params.get('grant_type')).toBe('authorization_code');
       expect(params.get('code')).toBe('code-123');
       expect(params.get('state')).toBeNull();
+      expect(params.get('redirect_uri')).toBe(
+        'http://localhost:4200/auth/google/loggedIn'
+      );
       expect(config?.headers?.['Content-Type']).toBe(
         'application/x-www-form-urlencoded'
       );
@@ -116,9 +121,9 @@ describe('AuthService', () => {
     });
 
     it('should reject reused state', async () => {
-      const state = new URL(service.createGoogleAuthStartUrl()).searchParams.get(
-        'state'
-      )!;
+      const state = new URL(
+        service.createGoogleAuthStartUrl('http://localhost:4200')
+      ).searchParams.get('state')!;
       jest.spyOn(axios, 'post').mockResolvedValue({
         data: {
           access_token: 'access-token',
@@ -135,9 +140,9 @@ describe('AuthService', () => {
     });
 
     it('should throw bad gateway error when google exchange fails', async () => {
-      const state = new URL(service.createGoogleAuthStartUrl()).searchParams.get(
-        'state'
-      )!;
+      const state = new URL(
+        service.createGoogleAuthStartUrl('http://localhost:4200')
+      ).searchParams.get('state')!;
       jest.spyOn(axios, 'post').mockRejectedValue({
         isAxiosError: true,
         response: {

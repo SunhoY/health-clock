@@ -31,13 +31,23 @@ describe('AuthController', () => {
       const controller = app.get<AuthController>(AuthController);
       const redirect = jest.fn();
 
-      controller.startGoogleAuth({ redirect } as never);
+      controller.startGoogleAuth(
+        {
+          headers: {
+            origin: 'http://localhost:4200'
+          }
+        } as never,
+        { redirect } as never
+      );
 
       expect(redirect).toHaveBeenCalledTimes(1);
       const [statusCode, location] = redirect.mock.calls[0];
       expect(statusCode).toBe(302);
       expect(typeof location).toBe('string');
       expect(location).toContain('https://accounts.google.com/o/oauth2/v2/auth');
+      expect(new URL(location).searchParams.get('redirect_uri')).toBe(
+        'http://localhost:4200/auth/google/loggedIn'
+      );
       expect(new URL(location).searchParams.get('state')).toBeTruthy();
     });
   });

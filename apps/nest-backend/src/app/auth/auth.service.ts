@@ -9,10 +9,15 @@ import { randomBytes } from 'crypto';
 import { AuthProviderDto } from './dto/auth-provider.dto';
 import { GoogleAuthExchangeResponseDto } from './dto/google-auth-exchange-response.dto';
 
+interface OAuthStateContext {
+  expiresAt: number;
+  redirectUri: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly oauthStateTtlMs = 5 * 60 * 1000;
-  private readonly oauthStateStore = new Map<string, number>();
+  private readonly oauthStateStore = new Map<string, OAuthStateContext>();
 
   getAuthProviders(): AuthProviderDto[] {
     return [
@@ -24,17 +29,19 @@ export class AuthService {
     ];
   }
 
-  createGoogleAuthStartUrl(): string {
+  createGoogleAuthStartUrl(requestOrigin?: string): string {
     const googleAuthorizeEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
     this.cleanupExpiredStates();
     const state = randomBytes(24).toString('base64url');
-    this.oauthStateStore.set(state, Date.now() + this.oauthStateTtlMs);
+    const redirectUri = this.resolveGoogleRedirectUri(requestOrigin);
+    this.oauthStateStore.set(state, {
+      expiresAt: Date.now() + this.oauthStateTtlMs,
+      redirectUri
+    });
 
     const searchParams = new URLSearchParams({
       client_id: process.env.GOOGLE_OAUTH_CLIENT_ID ?? 'google-client-id',
-      redirect_uri:
-        process.env.GOOGLE_OAUTH_REDIRECT_URI ??
-        'http://localhost:4200/auth/google/loggedIn',
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: process.env.GOOGLE_OAUTH_SCOPE ?? 'openid email profile',
       state
@@ -52,8 +59,7 @@ export class AuthService {
     }
 
     this.cleanupExpiredStates();
-    this.assertStateIsValid(state);
-    this.oauthStateStore.delete(state);
+    const redirectUri = this.consumeState(state);
 
     try {
       const response = await axios.post(
@@ -62,9 +68,7 @@ export class AuthService {
           client_id: process.env.GOOGLE_OAUTH_CLIENT_ID ?? 'google-client-id',
           client_secret:
             process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? 'google-client-secret',
-          redirect_uri:
-            process.env.GOOGLE_OAUTH_REDIRECT_URI ??
-            'http://localhost:4200/auth/google/loggedIn',
+          redirect_uri: redirectUri,
           grant_type: 'authorization_code',
           code
         }).toString(),
@@ -123,22 +127,42 @@ export class AuthService {
 
   private cleanupExpiredStates(): void {
     const now = Date.now();
-    for (const [state, expiresAt] of this.oauthStateStore.entries()) {
-      if (expiresAt <= now) {
+    for (const [state, context] of this.oauthStateStore.entries()) {
+      if (context.expiresAt <= now) {
         this.oauthStateStore.delete(state);
       }
     }
   }
 
-  private assertStateIsValid(state: string): void {
-    const expiresAt = this.oauthStateStore.get(state);
-    if (!expiresAt) {
+  private consumeState(state: string): string {
+    const context = this.oauthStateStore.get(state);
+    if (!context) {
       throw new UnauthorizedException('Invalid or expired OAuth state.');
     }
 
-    if (expiresAt <= Date.now()) {
+    if (context.expiresAt <= Date.now()) {
       this.oauthStateStore.delete(state);
       throw new UnauthorizedException('Invalid or expired OAuth state.');
     }
+
+    this.oauthStateStore.delete(state);
+    return context.redirectUri;
+  }
+
+  private resolveGoogleRedirectUri(requestOrigin?: string): string {
+    const configuredRedirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim();
+    if (configuredRedirectUri) {
+      return configuredRedirectUri;
+    }
+
+    if (requestOrigin?.trim()) {
+      try {
+        return `${new URL(requestOrigin).origin}/auth/google/loggedIn`;
+      } catch {
+        // fallback to default local redirect uri when header is malformed
+      }
+    }
+
+    return 'http://localhost:4200/auth/google/loggedIn';
   }
 }
