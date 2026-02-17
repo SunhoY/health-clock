@@ -123,7 +123,7 @@ const INITIAL_PRESETS: PresetItem[] = [
   }
 ];
 
-let localPresets: PresetItem[] = [...INITIAL_PRESETS];
+let localPresets: PresetItem[] = [];
 
 let presetCacheSource: PresetCacheSource = 'guest';
 
@@ -175,6 +175,32 @@ const readGuestPresets = (): PresetItem[] | null => {
   }
 };
 
+const isLegacySeedPreset = (preset: PresetItem, seed: PresetItem): boolean => {
+  return (
+    preset.id === seed.id &&
+    preset.title === seed.title &&
+    preset.exercises.length === seed.exercises.length &&
+    preset.exercises.every((exercise, index) => {
+      const seedExercise = seed.exercises[index];
+      return (
+        exercise.id === seedExercise.id &&
+        exercise.name === seedExercise.name &&
+        exercise.part === seedExercise.part
+      );
+    })
+  );
+};
+
+const isLegacySeedPresetList = (presets: PresetItem[]): boolean => {
+  if (presets.length !== INITIAL_PRESETS.length) {
+    return false;
+  }
+
+  return presets.every((preset, index) =>
+    isLegacySeedPreset(preset, INITIAL_PRESETS[index])
+  );
+};
+
 const persistGuestPresets = () => {
   localStorage.setItem(
     GUEST_PRESETS_STORAGE_KEY,
@@ -211,7 +237,21 @@ export const getPresetCacheSource = (): PresetCacheSource => {
 
 export const loadGuestPresets = (): PresetItem[] => {
   const persisted = readGuestPresets();
-  localPresets = [...(persisted ?? INITIAL_PRESETS)];
+  if (!persisted) {
+    localPresets = [];
+    presetCacheSource = 'guest';
+    persistGuestPresets();
+    return localPresets;
+  }
+
+  if (process.env.NODE_ENV !== 'test' && isLegacySeedPresetList(persisted)) {
+    localPresets = [];
+    presetCacheSource = 'guest';
+    persistGuestPresets();
+    return localPresets;
+  }
+
+  localPresets = [...persisted];
   presetCacheSource = 'guest';
   return localPresets;
 };
