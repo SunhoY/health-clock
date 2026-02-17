@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { GoogleAuthExchangeResponseDto } from './dto/google-auth-exchange-response.dto';
 
 describe('AuthController', () => {
   let app: TestingModule;
@@ -38,6 +39,31 @@ describe('AuthController', () => {
       expect(typeof location).toBe('string');
       expect(location).toContain('https://accounts.google.com/o/oauth2/v2/auth');
       expect(new URL(location).searchParams.get('state')).toBeTruthy();
+    });
+  });
+
+  describe('exchangeGoogleAuthCode', () => {
+    it('should call service exchange with code and state', async () => {
+      const controller = app.get<AuthController>(AuthController);
+      const service = app.get<AuthService>(AuthService);
+      const expectedResponse: GoogleAuthExchangeResponseDto = {
+        accessToken: 'access-token',
+        expiresIn: 3600,
+        scope: 'openid email profile',
+        tokenType: 'Bearer',
+        idToken: 'id-token'
+      };
+      const exchangeSpy = jest
+        .spyOn(service, 'exchangeGoogleAuthCode')
+        .mockResolvedValue(expectedResponse);
+
+      const result = await controller.exchangeGoogleAuthCode({
+        code: 'auth-code',
+        state: 'oauth-state'
+      });
+
+      expect(exchangeSpy).toHaveBeenCalledWith('auth-code', 'oauth-state');
+      expect(result).toEqual(expectedResponse);
     });
   });
 });
