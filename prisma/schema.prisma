@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String            @unique
+  displayName     String?           @map("display_name") @db.VarChar(80)
+  profileImageUrl String?           @map("profile_image_url")
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  oauthAccounts   OAuthAccount[]
+  routines        Routine[]
+  oauthStateTokens OauthStateToken[]
+
+  @@map("users")
+}
+
+model OAuthAccount {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                String    @map("user_id") @db.Uuid
+  provider              String    @db.VarChar(20)
+  providerUserId        String    @map("provider_user_id") @db.VarChar(191)
+  emailAtProvider       String?   @map("email_at_provider")
+  accessTokenEncrypted  String?   @map("access_token_encrypted")
+  refreshTokenEncrypted String?   @map("refresh_token_encrypted")
+  tokenExpiresAt        DateTime? @map("token_expires_at") @db.Timestamptz(6)
+  scope                 String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@index([userId], map: "idx_oauth_accounts_user_id")
+  @@map("oauth_accounts")
+}
+
+model OauthStateToken {
+  state      String    @id @db.VarChar(128)
+  provider   String    @db.VarChar(20)
+  redirectUri String   @map("redirect_uri")
+  userId     String?   @map("user_id") @db.Uuid
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt     DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt], map: "idx_oauth_state_tokens_expires_at")
+  @@map("oauth_state_tokens")
+}
+
+model Exercise {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code               String            @unique @db.VarChar(80)
+  name               String            @db.VarChar(100)
+  exerciseType       String            @map("exercise_type") @db.VarChar(20)
+  bodyPart           String            @map("body_part") @db.VarChar(30)
+  equipment          String[]          @default([])
+  difficulty         String?           @db.VarChar(20)
+  description        String?
+  instructions       String[]          @default([])
+  primaryMuscles     String[]          @default([]) @map("primary_muscles")
+  secondaryMuscles   String[]          @default([]) @map("secondary_muscles")
+  defaultRestSeconds Int?              @map("default_rest_seconds")
+  isActive           Boolean           @default(true) @map("is_active")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  routineExercises   RoutineExercise[]
+
+  @@index([bodyPart, exerciseType], map: "idx_exercises_body_part_type")
+  @@map("exercises")
+}
+
+model Routine {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String            @map("user_id") @db.Uuid
+  title           String            @db.VarChar(80)
+  description     String?
+  lastUsedAt      DateTime?         @map("last_used_at") @db.Timestamptz(6)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routineExercises RoutineExercise[]
+
+  @@index([userId, createdAt], map: "idx_routines_user_id_created_at")
+  @@map("routines")
+}
+
+model RoutineExercise {
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  routineId             String               @map("routine_id") @db.Uuid
+  exerciseId            String               @map("exercise_id") @db.Uuid
+  orderNo               Int                  @map("order_no")
+  metricType            String               @map("metric_type") @db.VarChar(20)
+  targetSets            Int?                 @map("target_sets") @db.SmallInt
+  targetReps            Int?                 @map("target_reps") @db.SmallInt
+  targetWeightKg        Decimal?             @map("target_weight_kg") @db.Decimal(6, 2)
+  targetDurationSeconds Int?                 @map("target_duration_seconds")
+  restSeconds           Int?                 @map("rest_seconds")
+  notes                 String?              @db.VarChar(500)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+  routine               Routine              @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise              Exercise             @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  routineExerciseSets   RoutineExerciseSet[]
+
+  @@unique([routineId, orderNo])
+  @@index([routineId, orderNo], map: "idx_routine_exercises_routine_id_order_no")
+  @@index([exerciseId], map: "idx_routine_exercises_exercise_id")
+  @@map("routine_exercises")
+}
+
+model RoutineExerciseSet {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  routineExerciseId     String          @map("routine_exercise_id") @db.Uuid
+  setNo                 Int             @map("set_no") @db.SmallInt
+  targetWeightKg        Decimal?        @map("target_weight_kg") @db.Decimal(6, 2)
+  targetReps            Int?            @map("target_reps") @db.SmallInt
+  targetDurationSeconds Int?            @map("target_duration_seconds")
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+  routineExercise       RoutineExercise @relation(fields: [routineExerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([routineExerciseId, setNo])
+  @@index([routineExerciseId, setNo], map: "idx_routine_exercise_sets_re_id_set_no")
+  @@map("routine_exercise_sets")
+}

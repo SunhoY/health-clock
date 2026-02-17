@@ -1,5 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { PrismaService } from '../prisma/prisma.service';
+
+interface RoutineExerciseRow {
+  id: string;
+  part: string;
+  name: string;
+  sets: number;
+  weight?: number;
+  reps?: number;
+  duration?: number;
+}
 
 interface RoutineSummaryRow {
   id: string;
@@ -7,31 +17,74 @@ interface RoutineSummaryRow {
   exerciseCount: number;
   createdAt: Date;
   lastUsedAt: Date | null;
+  exercises: RoutineExerciseRow[];
 }
 
 @Injectable()
 export class RoutinesRepository {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findSummariesByUserId(userId: string): Promise<RoutineSummaryRow[]> {
-    const result = await this.databaseService.query<RoutineSummaryRow>(
-      `
-        SELECT
-          routines.id,
-          routines.title,
-          COUNT(routine_exercises.id)::int AS "exerciseCount",
-          routines.created_at AS "createdAt",
-          routines.last_used_at AS "lastUsedAt"
-        FROM routines
-        LEFT JOIN routine_exercises
-          ON routine_exercises.routine_id = routines.id
-        WHERE routines.user_id = $1
-        GROUP BY routines.id
-        ORDER BY routines.created_at DESC
-      `,
-      [userId]
-    );
+    const routines = await this.prisma.routine.findMany({
+      where: {
+        userId
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        routineExercises: {
+          orderBy: {
+            orderNo: 'asc'
+          },
+          include: {
+            exercise: true
+          }
+        }
+      }
+    });
 
-    return result.rows;
+    return routines.map((routine) => {
+      const exercises: RoutineExerciseRow[] = routine.routineExercises.map(
+        (routineExercise) => ({
+          id: routineExercise.id,
+          part: routineExercise.exercise.bodyPart,
+          name: routineExercise.exercise.name,
+          sets: Math.max(1, routineExercise.targetSets ?? 1),
+          weight:
+            routineExercise.targetWeightKg === null
+              ? undefined
+              : Number(routineExercise.targetWeightKg),
+          reps: routineExercise.targetReps ?? undefined,
+          duration:
+            routineExercise.targetDurationSeconds === null
+              ? undefined
+              : Math.max(1, Math.ceil(routineExercise.targetDurationSeconds / 60))
+        })
+      );
+
+      return {
+        id: routine.id,
+        title: routine.title,
+        exerciseCount: routine.routineExercises.length,
+        exercises,
+        createdAt: routine.createdAt,
+        lastUsedAt: routine.lastUsedAt
+      };
+    });
+  }
+
+  async deleteByRoutineIdAndUserId(
+    routineId: string,
+    userId: string
+  ): Promise<boolean> {
+    const result = await this.prisma.routine.deleteMany({
+      where: {
+        id: routineId,
+        userId
+      }
+    });
+
+    return result.count > 0;
   }
 }

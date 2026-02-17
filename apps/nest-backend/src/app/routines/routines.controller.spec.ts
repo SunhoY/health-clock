@@ -2,6 +2,25 @@ import { RoutinesController } from './routines.controller';
 import { RoutinesService } from './routines.service';
 
 describe('RoutinesController', () => {
+  it('should delete routine by current user id', async () => {
+    const routinesService = {
+      getRoutineSummariesByUserId: jest.fn(),
+      deleteRoutineByUserId: jest.fn().mockResolvedValue(undefined)
+    } as unknown as RoutinesService;
+
+    const controller = new RoutinesController(routinesService);
+    await controller.deleteRoutine('routine-1', {
+      id: 'user-1',
+      email: 'user@example.com',
+      provider: 'google'
+    });
+
+    expect(routinesService.deleteRoutineByUserId).toHaveBeenCalledWith(
+      'routine-1',
+      'user-1'
+    );
+  });
+
   it('should request routine summaries by current user id', async () => {
     const routinesService = {
       getRoutineSummariesByUserId: jest.fn().mockResolvedValue([
@@ -9,10 +28,19 @@ describe('RoutinesController', () => {
           id: 'routine-1',
           title: '상체 루틴',
           exerciseCount: 4,
+          exercises: [
+            {
+              id: 'routine-exercise-1',
+              part: 'chest',
+              name: '벤치프레스',
+              sets: 4
+            }
+          ],
           createdAt: '2026-02-17T10:00:00.000Z',
           lastUsedAt: null
         }
-      ])
+      ]),
+      deleteRoutineByUserId: jest.fn()
     } as unknown as RoutinesService;
 
     const controller = new RoutinesController(routinesService);
@@ -28,6 +56,14 @@ describe('RoutinesController', () => {
         id: 'routine-1',
         title: '상체 루틴',
         exerciseCount: 4,
+        exercises: [
+          {
+            id: 'routine-exercise-1',
+            part: 'chest',
+            name: '벤치프레스',
+            sets: 4
+          }
+        ],
         createdAt: '2026-02-17T10:00:00.000Z',
         lastUsedAt: null
       }

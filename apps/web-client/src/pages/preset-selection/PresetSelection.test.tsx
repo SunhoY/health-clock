@@ -2,23 +2,57 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { PresetSelection } from './PresetSelection';
-import { addLocalPreset, resetLocalPresets } from './presetStore';
+import type { PresetItem } from './presetStore';
 import * as presetApi from './presetApi';
 
 const mockNavigate = jest.fn();
 
-// Mock react-router-dom
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
 }));
 
+const INITIAL_PRESETS: PresetItem[] = [
+  {
+    id: '1',
+    title: '전신 운동',
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    exercises: [
+      {
+        id: 'squat',
+        part: 'legs',
+        name: '스쿼트',
+        sets: 3,
+        weight: 50,
+        reps: 10,
+      },
+    ],
+  },
+  {
+    id: '2',
+    title: '상체 집중',
+    createdAt: new Date('2024-01-02T00:00:00.000Z'),
+    exercises: [
+      {
+        id: 'bench-press',
+        part: 'chest',
+        name: '벤치프레스',
+        sets: 4,
+        weight: 80,
+        reps: 8,
+      },
+    ],
+  },
+];
+
 describe('PresetSelection', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
-    resetLocalPresets();
     jest.restoreAllMocks();
+    jest.spyOn(presetApi, 'fetchPresets').mockResolvedValue([...INITIAL_PRESETS]);
+    jest.spyOn(presetApi, 'deletePreset').mockResolvedValue();
   });
+
   it('PresetSelection 컴포넌트가 올바르게 렌더링된다', () => {
     render(
       <MemoryRouter>
@@ -29,7 +63,7 @@ describe('PresetSelection', () => {
     expect(screen.getByText('운동 루틴 선택')).toBeInTheDocument();
   });
 
-  it('프리셋 목록은 mock API(fetchPresets) 결과를 렌더링한다', async () => {
+  it('프리셋 목록은 서버 API(fetchPresets) 결과를 렌더링한다', async () => {
     render(
       <MemoryRouter>
         <PresetSelection />
@@ -107,10 +141,13 @@ describe('PresetSelection', () => {
     });
   });
 
-  it('액션 메뉴에서 삭제 선택 후 확인하면 목록에서 제거된다', async () => {
+  it('액션 메뉴에서 삭제 선택 후 성공하면 목록에서 제거된다', async () => {
     const user = userEvent.setup();
     const deletePresetSpy = jest.spyOn(presetApi, 'deletePreset');
-    const fetchPresetsSpy = jest.spyOn(presetApi, 'fetchPresets');
+    const fetchPresetsSpy = jest
+      .spyOn(presetApi, 'fetchPresets')
+      .mockResolvedValueOnce([...INITIAL_PRESETS])
+      .mockResolvedValueOnce([INITIAL_PRESETS[1]]);
 
     render(
       <MemoryRouter>
@@ -122,7 +159,7 @@ describe('PresetSelection', () => {
     await user.click(screen.getByRole('button', { name: '삭제' }));
 
     expect(deletePresetSpy).toHaveBeenCalledWith('1');
-    expect(fetchPresetsSpy).toHaveBeenCalled();
+    expect(fetchPresetsSpy).toHaveBeenCalledTimes(2);
     expect(screen.queryByText('전신 운동')).not.toBeInTheDocument();
   });
 
@@ -145,15 +182,23 @@ describe('PresetSelection', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('로컬 저장된 새 루틴이 프리셋 목록에 표시된다', async () => {
-    addLocalPreset('새로 만든 루틴', [
+  it('서버에서 새 루틴이 내려오면 목록에 표시된다', async () => {
+    jest.spyOn(presetApi, 'fetchPresets').mockResolvedValueOnce([
+      ...INITIAL_PRESETS,
       {
-        exerciseId: 'bench-press',
-        exerciseName: '벤치프레스',
-        bodyPart: 'chest',
-        sets: 3,
-        weight: 20
-      }
+        id: '3',
+        title: '새로 만든 루틴',
+        createdAt: new Date('2024-01-03T00:00:00.000Z'),
+        exercises: [
+          {
+            id: 'push-up',
+            part: 'chest',
+            name: '푸쉬업',
+            sets: 3,
+            reps: 12,
+          },
+        ],
+      },
     ]);
 
     render(
@@ -164,4 +209,4 @@ describe('PresetSelection', () => {
 
     expect(await screen.findByText('새로 만든 루틴')).toBeInTheDocument();
   });
-}); 
+});

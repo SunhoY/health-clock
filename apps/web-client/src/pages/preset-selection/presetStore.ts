@@ -227,3 +227,7 @@ export const deleteLocalPresetExercise = (
 export const resetLocalPresets = () => {
   localPresets = [...INITIAL_PRESETS];
 };
+
+export const replaceLocalPresets = (nextPresets: PresetItem[]) => {
+  localPresets = [...nextPresets];
+};
