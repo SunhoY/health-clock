@@ -9,6 +9,7 @@ const meta: Meta<typeof HomeView> = {
   },
   argTypes: {
     onStartWorkout: { action: 'start workout clicked' },
+    onStartGoogleLogin: { action: 'google login clicked' },
   },
   tags: ['autodocs'],
 };

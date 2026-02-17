@@ -21,22 +21,22 @@ it('Home 컴포넌트가 올바르게 렌더링된다', () => {
       <Home />
     </MemoryRouter>
   );
-  
-  const button = screen.getByRole('button', { name: '운동 시작하기' });
-  expect(button).toBeInTheDocument();
+
+  expect(screen.getByRole('button', { name: 'Google로 로그인' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'GUEST로 시작하기' })).toBeInTheDocument();
 });
 
 it('운동 시작 버튼 클릭 시 프리셋 선택 화면으로 라우팅된다', async () => {
   const user = userEvent.setup();
-  
+
   render(
     <MemoryRouter>
       <Home />
     </MemoryRouter>
   );
-  
-  const button = screen.getByRole('button', { name: '운동 시작하기' });
+
+  const button = screen.getByRole('button', { name: 'GUEST로 시작하기' });
   await user.click(button);
-  
+
   expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
-}); 
+});

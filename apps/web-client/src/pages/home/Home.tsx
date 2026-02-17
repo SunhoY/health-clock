@@ -8,5 +8,14 @@ export const Home = () => {
     navigate('/preset-selection');
   };
 
-  return <HomeView onStartWorkout={handleStartWorkout} />;
-}; 
+  const handleStartGoogleLogin = () => {
+    window.location.assign('/api/auth/google/start');
+  };
+
+  return (
+    <HomeView
+      onStartWorkout={handleStartWorkout}
+      onStartGoogleLogin={handleStartGoogleLogin}
+    />
+  );
+};

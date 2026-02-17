@@ -1,8 +1,12 @@
 interface HomeViewProps {
   onStartWorkout: () => void;
+  onStartGoogleLogin: () => void;
 }
 
-export const HomeView = ({ onStartWorkout }: HomeViewProps) => {
+export const HomeView = ({
+  onStartWorkout,
+  onStartGoogleLogin,
+}: HomeViewProps) => {
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <div
@@ -19,13 +23,26 @@ export const HomeView = ({ onStartWorkout }: HomeViewProps) => {
           <h1 className="text-5xl font-black tracking-tight text-white sm:text-7xl">
             Health Clock
           </h1>
-          <button
-            onClick={onStartWorkout}
-            className="fixed inset-x-6 z-10 rounded-full bg-cyan-400 px-9 py-4 text-lg font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950 sm:static sm:inset-auto sm:bottom-auto sm:mt-12"
-            style={{ bottom: 'max(1.75rem, calc(env(safe-area-inset-bottom) + 0.75rem))' }}
+          <div
+            data-testid="home-cta-stack"
+            className="fixed inset-x-6 z-10 flex flex-col gap-3 sm:static sm:inset-auto sm:mx-auto sm:mt-12 sm:max-w-sm"
+            style={{
+              bottom: 'max(1.75rem, calc(env(safe-area-inset-bottom) + 0.75rem))',
+            }}
           >
-            운동 시작하기
-          </button>
+            <button
+              onClick={onStartGoogleLogin}
+              className="rounded-full border border-cyan-300/70 bg-slate-900/80 px-9 py-4 text-lg font-bold text-cyan-100 transition hover:border-cyan-200 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950"
+            >
+              Google로 로그인
+            </button>
+            <button
+              onClick={onStartWorkout}
+              className="rounded-full bg-cyan-400 px-9 py-4 text-lg font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-slate-950"
+            >
+              GUEST로 시작하기
+            </button>
+          </div>
         </section>
       </div>
     </main>
