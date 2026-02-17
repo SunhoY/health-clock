@@ -81,22 +81,60 @@ describe('AuthController', () => {
       expect(new URL(location).searchParams.get('state')).toBe('state123');
     });
 
-    it('should ignore host/referer headers when origin is missing', () => {
+    it('should use referer origin when origin header is missing', () => {
       const controller = app.get<AuthController>(AuthController);
       const redirect = jest.fn();
 
       controller.startGoogleAuth(
         {
           headers: {
-            host: 'localhost:4200',
-            referer: 'http://localhost:4200/somewhere'
+            referer: 'https://app.example.com/somewhere'
           }
         } as never,
         { redirect } as never
       );
 
       expect(authService.createGoogleAuthStartUrl).toHaveBeenCalledWith(
-        undefined
+        'https://app.example.com'
+      );
+      expect(redirect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should use forwarded host and proto when origin/referer are missing', () => {
+      const controller = app.get<AuthController>(AuthController);
+      const redirect = jest.fn();
+
+      controller.startGoogleAuth(
+        {
+          headers: {
+            'x-forwarded-host': 'api.example.com',
+            'x-forwarded-proto': 'https'
+          }
+        } as never,
+        { redirect } as never
+      );
+
+      expect(authService.createGoogleAuthStartUrl).toHaveBeenCalledWith(
+        'https://api.example.com'
+      );
+      expect(redirect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should use host when origin/referer/forwarded-host are missing', () => {
+      const controller = app.get<AuthController>(AuthController);
+      const redirect = jest.fn();
+
+      controller.startGoogleAuth(
+        {
+          headers: {
+            host: 'localhost:4200'
+          }
+        } as never,
+        { redirect } as never
+      );
+
+      expect(authService.createGoogleAuthStartUrl).toHaveBeenCalledWith(
+        'http://localhost:4200'
       );
       expect(redirect).toHaveBeenCalledTimes(1);
     });
