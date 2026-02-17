@@ -59,6 +59,7 @@ describe('GoogleAuthCallback', () => {
 
     const saved = localStorage.getItem('health-clock.google-auth');
     expect(saved).toContain('"accessToken":"access-token"');
+    expect(localStorage.getItem('health-clock.session-mode')).toBe('authenticated');
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/preset-selection', {

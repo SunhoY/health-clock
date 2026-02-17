@@ -54,6 +54,7 @@ it('운동 시작 버튼 클릭 시 프리셋 선택 화면으로 라우팅된�
   const button = screen.getByRole('button', { name: 'GUEST로 시작하기' });
   await user.click(button);
 
+  expect(localStorage.getItem('health-clock.session-mode')).toBe('guest');
   expect(mockNavigate).toHaveBeenCalledWith('/preset-selection');
 });
 
@@ -109,5 +110,26 @@ it('세션 검증이 401이면 세션을 제거하고 홈에 남는다', async (
     expect(screen.getByRole('button', { name: 'Google로 로그인' })).toBeInTheDocument();
   });
   expect(localStorage.getItem('health-clock.google-auth')).toBeNull();
+  expect(mockNavigate).not.toHaveBeenCalledWith('/preset-selection', { replace: true });
+});
+
+it('게스트 모드에서는 토큰이 있어도 자동 세션 검증을 수행하지 않는다', async () => {
+  localStorage.setItem(
+    'health-clock.google-auth',
+    JSON.stringify({
+      accessToken: 'token-1',
+      tokenType: 'Bearer'
+    })
+  );
+  localStorage.setItem('health-clock.session-mode', 'guest');
+
+  render(
+    <MemoryRouter>
+      <Home />
+    </MemoryRouter>
+  );
+
+  expect(await screen.findByRole('button', { name: 'GUEST로 시작하기' })).toBeInTheDocument();
+  expect(mockFetch).not.toHaveBeenCalled();
   expect(mockNavigate).not.toHaveBeenCalledWith('/preset-selection', { replace: true });
 });

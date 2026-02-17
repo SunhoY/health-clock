@@ -1,19 +1,18 @@
 import { ExerciseDetail } from '../../types/exercise';
 import {
+  addLocalPreset,
+  appendLocalPresetExercise,
   deleteLocalPresetExercise,
   deleteLocalPreset,
+  getPresetCacheSource,
   getLocalPresetById,
   getLocalPresets,
+  loadGuestPresets,
   PresetItem,
-  replaceLocalPresets
+  replaceServerPresetCache,
+  updateLocalPresetExercise
 } from './presetStore';
-
-const AUTH_STORAGE_KEY = 'health-clock.google-auth';
-
-interface StoredAuthSession {
-  accessToken?: string;
-  tokenType?: string;
-}
+import { getSessionMode, readAuthSession } from '../../shared/sessionMode';
 
 interface RoutineExerciseApiResponse {
   id: string;
@@ -46,18 +45,12 @@ interface AppendRoutineExerciseResponse {
   id: string;
 }
 
-const readAuthSession = (): StoredAuthSession | null => {
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
+const isGuestMode = (): boolean => {
+  return getSessionMode() === 'guest';
+};
 
-  try {
-    const parsed = JSON.parse(raw) as StoredAuthSession;
-    return parsed;
-  } catch {
-    return null;
-  }
+const ensureGuestPresets = (): PresetItem[] => {
+  return loadGuestPresets();
 };
 
 const buildAuthorizationHeader = (): string => {
@@ -143,6 +136,10 @@ const tryReadMessage = async (response: Response): Promise<string | undefined> =
 };
 
 export const fetchPresets = async (): Promise<PresetItem[]> => {
+  if (isGuestMode()) {
+    return ensureGuestPresets();
+  }
+
   const response = await fetch('/api/routines', {
     headers: {
       Authorization: buildAuthorizationHeader()
@@ -160,7 +157,7 @@ export const fetchPresets = async (): Promise<PresetItem[]> => {
 
   const routines = Array.isArray(payload) ? payload : [];
   const presets = routines.map(toPresetItem);
-  replaceLocalPresets(presets);
+  replaceServerPresetCache(presets);
   return presets;
 };
 
@@ -168,6 +165,18 @@ export const createPreset = async (
   title: string,
   exercises: ExerciseDetail[]
 ): Promise<CreateRoutineResponse> => {
+  if (isGuestMode()) {
+    ensureGuestPresets();
+    const created = addLocalPreset(title, exercises);
+    return {
+      id: created.id,
+      title: created.title,
+      exerciseCount: created.exercises.length,
+      createdAt: created.createdAt.toISOString(),
+      lastUsedAt: created.lastUsed ? created.lastUsed.toISOString() : null
+    };
+  }
+
   const response = await fetch('/api/routines', {
     method: 'POST',
     headers: {
@@ -190,6 +199,12 @@ export const createPreset = async (
 };
 
 export const deletePreset = async (presetId: string): Promise<void> => {
+  if (isGuestMode()) {
+    ensureGuestPresets();
+    deleteLocalPreset(presetId);
+    return;
+  }
+
   const response = await fetch(`/api/routines/${encodeURIComponent(presetId)}`, {
     method: 'DELETE',
     headers: {
@@ -200,14 +215,19 @@ export const deletePreset = async (presetId: string): Promise<void> => {
   if (!response.ok) {
     throw new Error('루틴 삭제 요청에 실패했습니다.');
   }
-
-  deleteLocalPreset(presetId);
 };
 
 export const fetchPresetById = async (presetId: string): Promise<PresetItem | undefined> => {
-  const localPreset = getLocalPresetById(presetId);
-  if (localPreset) {
-    return localPreset;
+  if (isGuestMode()) {
+    const presets = ensureGuestPresets();
+    return presets.find((preset) => preset.id === presetId);
+  }
+
+  if (getPresetCacheSource() === 'server') {
+    const localPreset = getLocalPresetById(presetId);
+    if (localPreset) {
+      return localPreset;
+    }
   }
 
   const presets = await fetchPresets();
@@ -219,6 +239,11 @@ export const updatePresetExercise = async (
   routineExerciseId: string,
   exercise: ExerciseDetail
 ): Promise<PresetItem | undefined> => {
+  if (isGuestMode()) {
+    ensureGuestPresets();
+    return updateLocalPresetExercise(presetId, exercise);
+  }
+
   const response = await fetch(
     `/api/routines/${encodeURIComponent(presetId)}/exercises/${encodeURIComponent(routineExerciseId)}`,
     {
@@ -236,14 +261,24 @@ export const updatePresetExercise = async (
     throw new Error(reason || '운동 수정 요청에 실패했습니다.');
   }
 
-  const presets = await fetchPresets();
-  return presets.find((preset) => preset.id === presetId);
+  const refreshed = await fetchPresets();
+  return refreshed.find((preset) => preset.id === presetId);
 };
 
 export const appendPresetExercise = async (
   presetId: string,
   exercise: ExerciseDetail
 ): Promise<AppendRoutineExerciseResponse> => {
+  if (isGuestMode()) {
+    ensureGuestPresets();
+    const appended = appendLocalPresetExercise(presetId, exercise);
+    if (!appended) {
+      throw new Error('운동 추가 요청에 실패했습니다.');
+    }
+
+    return { id: appended.id };
+  }
+
   const response = await fetch(
     `/api/routines/${encodeURIComponent(presetId)}/exercises`,
     {
@@ -270,6 +305,11 @@ export const deletePresetExercise = async (
   presetId: string,
   exerciseId: string
 ): Promise<PresetItem | undefined> => {
+  if (isGuestMode()) {
+    ensureGuestPresets();
+    return deleteLocalPresetExercise(presetId, exerciseId);
+  }
+
   const response = await fetch(
     `/api/routines/${encodeURIComponent(presetId)}/exercises/${encodeURIComponent(exerciseId)}`,
     {
@@ -285,9 +325,18 @@ export const deletePresetExercise = async (
     throw new Error(reason || '운동 삭제 요청에 실패했습니다.');
   }
 
-  return deleteLocalPresetExercise(presetId, exerciseId);
+  const refreshed = await fetchPresets();
+  return refreshed.find((preset) => preset.id === presetId);
 };
 
 export const getPresetCache = (): PresetItem[] => {
+  if (isGuestMode()) {
+    return ensureGuestPresets();
+  }
+
+  if (getPresetCacheSource() !== 'server') {
+    return [];
+  }
+
   return getLocalPresets();
 };

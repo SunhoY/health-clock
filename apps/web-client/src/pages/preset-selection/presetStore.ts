@@ -20,6 +20,10 @@ export interface PresetItem {
   lastUsed?: Date;
 }
 
+const GUEST_PRESETS_STORAGE_KEY = 'health-clock.guest-presets';
+
+export type PresetCacheSource = 'guest' | 'server';
+
 const INITIAL_PRESETS: PresetItem[] = [
   {
     id: '1',
@@ -121,6 +125,74 @@ const INITIAL_PRESETS: PresetItem[] = [
 
 let localPresets: PresetItem[] = [...INITIAL_PRESETS];
 
+let presetCacheSource: PresetCacheSource = 'guest';
+
+interface SerializedPresetItem extends Omit<PresetItem, 'createdAt' | 'lastUsed'> {
+  createdAt: string;
+  lastUsed?: string;
+}
+
+const toDate = (value: string | undefined): Date | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed;
+};
+
+const toSerializedPreset = (preset: PresetItem): SerializedPresetItem => ({
+  ...preset,
+  createdAt: preset.createdAt.toISOString(),
+  lastUsed: preset.lastUsed?.toISOString()
+});
+
+const deserializePreset = (preset: SerializedPresetItem): PresetItem => ({
+  ...preset,
+  createdAt: toDate(preset.createdAt) ?? new Date(),
+  lastUsed: toDate(preset.lastUsed)
+});
+
+const readGuestPresets = (): PresetItem[] | null => {
+  const raw = localStorage.getItem(GUEST_PRESETS_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as SerializedPresetItem[];
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed.map(deserializePreset);
+  } catch {
+    return null;
+  }
+};
+
+const persistGuestPresets = () => {
+  localStorage.setItem(
+    GUEST_PRESETS_STORAGE_KEY,
+    JSON.stringify(localPresets.map(toSerializedPreset))
+  );
+};
+
+const createRandomId = (prefix: string): string => {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const commitLocalPresets = (nextPresets: PresetItem[]) => {
+  localPresets = nextPresets;
+  if (presetCacheSource === 'guest') {
+    persistGuestPresets();
+  }
+};
+
 const toPresetExercise = (exercise: ExerciseDetail, index: number): PresetExercise => ({
   id: `${exercise.exerciseId}-${index + 1}`,
   exerciseCode: exercise.exerciseId,
@@ -133,24 +205,35 @@ const toPresetExercise = (exercise: ExerciseDetail, index: number): PresetExerci
   setDetails: exercise.setDetails
 });
 
+export const getPresetCacheSource = (): PresetCacheSource => {
+  return presetCacheSource;
+};
+
+export const loadGuestPresets = (): PresetItem[] => {
+  const persisted = readGuestPresets();
+  localPresets = [...(persisted ?? INITIAL_PRESETS)];
+  presetCacheSource = 'guest';
+  return localPresets;
+};
+
 export const getLocalPresets = (): PresetItem[] => {
   return localPresets;
 };
 
 export const addLocalPreset = (title: string, exercises: ExerciseDetail[]) => {
   const next: PresetItem = {
-    id: String(localPresets.length + 1),
+    id: createRandomId('guest-routine'),
     title,
     exercises: exercises.map(toPresetExercise),
     createdAt: new Date()
   };
 
-  localPresets = [next, ...localPresets];
+  commitLocalPresets([next, ...localPresets]);
   return next;
 };
 
 export const deleteLocalPreset = (presetId: string) => {
-  localPresets = localPresets.filter((preset) => preset.id !== presetId);
+  commitLocalPresets(localPresets.filter((preset) => preset.id !== presetId));
 };
 
 export const getLocalPresetById = (presetId: string): PresetItem | undefined => {
@@ -188,7 +271,7 @@ export const updateLocalPresetExercise = (
     setDetails: exercise.setDetails
   };
 
-  localPresets = localPresets.map((preset) => {
+  commitLocalPresets(localPresets.map((preset) => {
     if (preset.id !== presetId) {
       return preset;
     }
@@ -199,9 +282,37 @@ export const updateLocalPresetExercise = (
       ...preset,
       exercises: nextExercises
     };
-  });
+  }));
 
   return localPresets.find((preset) => preset.id === presetId);
+};
+
+export const appendLocalPresetExercise = (
+  presetId: string,
+  exercise: ExerciseDetail
+): PresetExercise | undefined => {
+  const targetPreset = localPresets.find((preset) => preset.id === presetId);
+  if (!targetPreset) {
+    return undefined;
+  }
+
+  const nextExercise: PresetExercise = {
+    ...toPresetExercise(exercise, targetPreset.exercises.length),
+    id: createRandomId('guest-routine-exercise')
+  };
+
+  commitLocalPresets(localPresets.map((preset) => {
+    if (preset.id !== presetId) {
+      return preset;
+    }
+
+    return {
+      ...preset,
+      exercises: [...preset.exercises, nextExercise]
+    };
+  }));
+
+  return nextExercise;
 };
 
 export const deleteLocalPresetExercise = (
@@ -213,7 +324,7 @@ export const deleteLocalPresetExercise = (
     return undefined;
   }
 
-  localPresets = localPresets.map((preset) => {
+  commitLocalPresets(localPresets.map((preset) => {
     if (preset.id !== presetId) {
       return preset;
     }
@@ -222,15 +333,24 @@ export const deleteLocalPresetExercise = (
       ...preset,
       exercises: preset.exercises.filter((exercise) => exercise.id !== exerciseId)
     };
-  });
+  }));
 
   return localPresets.find((preset) => preset.id === presetId);
 };
 
 export const resetLocalPresets = () => {
+  presetCacheSource = 'guest';
   localPresets = [...INITIAL_PRESETS];
+  persistGuestPresets();
 };
 
 export const replaceLocalPresets = (nextPresets: PresetItem[]) => {
+  presetCacheSource = 'guest';
+  localPresets = [...nextPresets];
+  persistGuestPresets();
+};
+
+export const replaceServerPresetCache = (nextPresets: PresetItem[]) => {
+  presetCacheSource = 'server';
   localPresets = [...nextPresets];
 };

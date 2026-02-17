@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleAuthCallbackView } from './GoogleAuthCallbackView';
+import { setSessionMode, storeAuthSession } from '../../shared/sessionMode';
 
 type CallbackStatus = 'loading' | 'error';
 
@@ -13,8 +14,6 @@ interface GoogleExchangeResponse {
     email: string;
   };
 }
-
-const AUTH_STORAGE_KEY = 'health-clock.google-auth';
 
 export const GoogleAuthCallback = () => {
   const navigate = useNavigate();
@@ -65,14 +64,12 @@ export const GoogleAuthCallback = () => {
           throw new Error(reason);
         }
 
-        localStorage.setItem(
-          AUTH_STORAGE_KEY,
-          JSON.stringify({
-            ...payload,
-            provider: 'google',
-            receivedAt: Date.now(),
-          })
-        );
+        storeAuthSession({
+          ...payload,
+          provider: 'google',
+          receivedAt: Date.now(),
+        });
+        setSessionMode('authenticated');
 
         navigate('/preset-selection', { replace: true });
       } catch {

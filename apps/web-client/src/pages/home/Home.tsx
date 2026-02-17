@@ -1,41 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HomeView } from './HomeView';
-
-const AUTH_STORAGE_KEY = 'health-clock.google-auth';
-
-interface StoredAuthSession {
-  accessToken?: string;
-  tokenType?: string;
-}
-
-const readAuthSession = (): StoredAuthSession | null => {
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as StoredAuthSession;
-  } catch {
-    return null;
-  }
-};
-
-const clearAuthSession = () => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-};
+import {
+  clearAuthSession,
+  isAuthenticatedMode,
+  readAuthSession,
+  setSessionMode
+} from '../../shared/sessionMode';
 
 export const Home = () => {
   const navigate = useNavigate();
   const [isCheckingSession, setIsCheckingSession] = useState(() => {
-    return Boolean(readAuthSession()?.accessToken);
+    return isAuthenticatedMode() && Boolean(readAuthSession()?.accessToken);
   });
 
   useEffect(() => {
+    if (!isAuthenticatedMode()) {
+      setIsCheckingSession(false);
+      return;
+    }
+
     const session = readAuthSession();
     const accessToken = session?.accessToken;
     if (!accessToken) {
+      setSessionMode('guest');
       setIsCheckingSession(false);
       return;
     }
@@ -58,6 +46,7 @@ export const Home = () => {
 
         if (response.status === 401 || response.status === 403) {
           clearAuthSession();
+          setSessionMode('guest');
         }
       } catch {
         // keep current session for transient network errors
@@ -76,6 +65,7 @@ export const Home = () => {
   }, [navigate]);
 
   const handleStartWorkout = () => {
+    setSessionMode('guest');
     navigate('/preset-selection');
   };
 
