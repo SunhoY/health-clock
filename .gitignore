@@ -49,3 +49,8 @@ test-output
 
 
 storybook-static
+
+# env
+.env
+.env.*
+!.env.example
