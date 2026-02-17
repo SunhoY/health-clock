@@ -187,4 +187,64 @@ export class RoutinesRepository {
 
     return result.count > 0;
   }
+
+  async deleteExerciseByRoutineIdAndExerciseIdAndUserId(
+    routineId: string,
+    routineExerciseId: string,
+    userId: string
+  ): Promise<boolean> {
+    const result = await this.prisma.routineExercise.deleteMany({
+      where: {
+        id: routineExerciseId,
+        routineId,
+        routine: {
+          userId
+        }
+      }
+    });
+
+    return result.count > 0;
+  }
+
+  async deleteExerciseByRoutineIdAndExerciseCodeAndUserId(
+    routineId: string,
+    exerciseCode: string,
+    userId: string
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const target = await tx.routineExercise.findFirst({
+        where: {
+          routineId,
+          routine: {
+            userId
+          },
+          exercise: {
+            code: exerciseCode
+          }
+        },
+        orderBy: {
+          orderNo: 'asc'
+        },
+        select: {
+          id: true
+        }
+      });
+
+      if (!target) {
+        return false;
+      }
+
+      const result = await tx.routineExercise.deleteMany({
+        where: {
+          id: target.id,
+          routineId,
+          routine: {
+            userId
+          }
+        }
+      });
+
+      return result.count > 0;
+    });
+  }
 }

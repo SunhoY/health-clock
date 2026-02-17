@@ -8,6 +8,8 @@ interface ExerciseSelectionViewProps {
   emptyMessage?: string;
   isLoading?: boolean;
   loadError?: string | null;
+  actionError?: string | null;
+  isDeletePending?: boolean;
   onRetry?: () => void;
   onExerciseSelect: (exercise: Exercise) => void;
   isEditMode?: boolean;
@@ -23,6 +25,8 @@ export function ExerciseSelectionView({
   emptyMessage,
   isLoading = false,
   loadError = null,
+  actionError = null,
+  isDeletePending = false,
   onRetry,
   onExerciseSelect,
   isEditMode = false,
@@ -83,6 +87,11 @@ export function ExerciseSelectionView({
         <div className="mb-7 text-center">
           <h1 className="text-3xl font-bold">{title ?? `${getBodyPartDisplayName(selectedBodyPart)} 운동`}</h1>
         </div>
+        {actionError && (
+          <div className="mb-4 rounded-xl border border-rose-900 bg-rose-900/20 px-4 py-3 text-sm text-rose-200">
+            {actionError}
+          </div>
+        )}
 
         <div className="space-y-3">
           {isLoading ? (
@@ -135,11 +144,12 @@ export function ExerciseSelectionView({
                   <button
                     type="button"
                     aria-label={`${exercise.name} 관리 메뉴`}
+                    disabled={isDeletePending}
                     onClick={(event) => {
                       event.stopPropagation();
                       setOpenMenuExerciseId(exercise.id);
                     }}
-                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-xl font-bold leading-none text-gray-300 transition-colors hover:text-white"
+                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-xl font-bold leading-none text-gray-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:text-gray-500"
                   >
                     ⋮
                   </button>
@@ -185,15 +195,19 @@ export function ExerciseSelectionView({
               <button
                 type="button"
                 onClick={() => {
+                  if (isDeletePending) {
+                    return;
+                  }
                   const target = exercises.find((exercise) => exercise.id === openMenuExerciseId);
                   setOpenMenuExerciseId(null);
                   if (target && onDeleteExercise) {
                     onDeleteExercise(target);
                   }
                 }}
-                className="w-full rounded-xl px-4 py-3 text-center text-lg font-bold text-rose-300 transition-colors hover:bg-gray-700"
+                disabled={isDeletePending}
+                className="w-full rounded-xl px-4 py-3 text-center text-lg font-bold text-rose-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:text-gray-500"
               >
-                삭제
+                {isDeletePending ? '삭제 중...' : '삭제'}
               </button>
             </div>
           </div>

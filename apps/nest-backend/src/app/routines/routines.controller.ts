@@ -46,4 +46,18 @@ export class RoutinesController {
   ): Promise<void> {
     await this.routinesService.deleteRoutineByUserId(routineId, user.id);
   }
+
+  @Delete(':routineId/exercises/:routineExerciseId')
+  @HttpCode(204)
+  async deleteRoutineExercise(
+    @Param('routineId') routineId: string,
+    @Param('routineExerciseId') routineExerciseId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ): Promise<void> {
+    await this.routinesService.deleteRoutineExerciseByUserId(
+      routineId,
+      routineExerciseId,
+      user.id
+    );
+  }
 }

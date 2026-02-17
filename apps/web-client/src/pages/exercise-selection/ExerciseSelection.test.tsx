@@ -2,7 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ExerciseSelection } from './ExerciseSelection';
-import { resetLocalPresets } from '../preset-selection/presetStore';
+import {
+  deleteLocalPresetExercise,
+  resetLocalPresets
+} from '../preset-selection/presetStore';
 import * as presetApi from '../preset-selection/presetApi';
 import * as exerciseApi from './exerciseApi';
 import { Exercise } from '../../types/exercise';
@@ -123,7 +126,11 @@ describe('ExerciseSelection', () => {
 
   it('편집 모드에서 운동 삭제를 선택하면 목록에서 제거된다', async () => {
     const user = userEvent.setup();
-    const deleteSpy = jest.spyOn(presetApi, 'deletePresetExercise');
+    const deleteSpy = jest
+      .spyOn(presetApi, 'deletePresetExercise')
+      .mockImplementation(async (presetId: string, exerciseId: string) => {
+        return deleteLocalPresetExercise(presetId, exerciseId);
+      });
 
     renderWithRouter({
       pathname: '/exercise-selection/edit',
@@ -139,5 +146,29 @@ describe('ExerciseSelection', () => {
     expect(fetchExercisesByBodyPartSpy).not.toHaveBeenCalled();
 
     deleteSpy.mockRestore();
+  });
+
+  it('편집 모드에서 운동 삭제 API가 실패하면 에러를 표시하고 목록을 유지한다', async () => {
+    const user = userEvent.setup();
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const deleteSpy = jest
+      .spyOn(presetApi, 'deletePresetExercise')
+      .mockRejectedValue(new Error('delete failed'));
+
+    renderWithRouter({
+      pathname: '/exercise-selection/edit',
+      state: { mode: 'edit', presetId: '2' }
+    });
+
+    await user.click(await screen.findByRole('button', { name: '벤치프레스 관리 메뉴' }));
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+
+    expect(deleteSpy).toHaveBeenCalledWith('2', 'bench-press');
+    expect(await screen.findByText('운동 삭제에 실패했습니다.')).toBeInTheDocument();
+    expect(screen.getByText('벤치프레스')).toBeInTheDocument();
+    expect(screen.getByText('바벨 로우')).toBeInTheDocument();
+
+    deleteSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 });

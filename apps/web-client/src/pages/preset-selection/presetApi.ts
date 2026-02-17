@@ -220,6 +220,21 @@ export const deletePresetExercise = async (
   presetId: string,
   exerciseId: string
 ): Promise<PresetItem | undefined> => {
+  const response = await fetch(
+    `/api/routines/${encodeURIComponent(presetId)}/exercises/${encodeURIComponent(exerciseId)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: buildAuthorizationHeader()
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const reason = await tryReadMessage(response);
+    throw new Error(reason || '운동 삭제 요청에 실패했습니다.');
+  }
+
   return deleteLocalPresetExercise(presetId, exerciseId);
 };
 

@@ -52,6 +52,8 @@ export function ExerciseSelection() {
   const [createExercises, setCreateExercises] = useState<Exercise[]>([]);
   const [isCreateLoading, setIsCreateLoading] = useState(false);
   const [createLoadError, setCreateLoadError] = useState<string | null>(null);
+  const [isDeletePending, setIsDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const selectedBodyPart = bodyPart || 'chest';
   const exercises = useMemo(() => {
@@ -78,28 +80,37 @@ export function ExerciseSelection() {
     }
   }, []);
 
+  const loadEditExercises = useCallback(async (presetId: string) => {
+    const preset = await fetchPresetById(presetId);
+    setEditExercises((preset?.exercises ?? []).map(findExerciseByPreset));
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
     if (!isEditMode || !routeState?.presetId) {
       setEditExercises([]);
+      setDeleteError(null);
+      setIsDeletePending(false);
       return () => {
         mounted = false;
       };
     }
 
-    fetchPresetById(routeState.presetId).then((preset) => {
-      if (!mounted || !preset) {
+    setDeleteError(null);
+    loadEditExercises(routeState.presetId).catch((error) => {
+      if (!mounted) {
         return;
       }
 
-      setEditExercises(preset.exercises.map(findExerciseByPreset));
+      console.error('편집 운동 목록 조회에 실패했습니다.', error);
+      setEditExercises([]);
     });
 
     return () => {
       mounted = false;
     };
-  }, [isEditMode, routeState?.presetId]);
+  }, [isEditMode, loadEditExercises, routeState?.presetId]);
 
   useEffect(() => {
     if (isEditMode) {
@@ -127,13 +138,22 @@ export function ExerciseSelection() {
   };
 
   const handleDeleteExercise = async (exercise: Exercise) => {
-    if (!routeState?.presetId) {
+    if (!routeState?.presetId || isDeletePending) {
       return;
     }
 
-    await deletePresetExercise(routeState.presetId, exercise.id);
-    const nextPreset = await fetchPresetById(routeState.presetId);
-    setEditExercises((nextPreset?.exercises ?? []).map(findExerciseByPreset));
+    setDeleteError(null);
+    setIsDeletePending(true);
+
+    try {
+      await deletePresetExercise(routeState.presetId, exercise.id);
+      await loadEditExercises(routeState.presetId);
+    } catch (error) {
+      console.error('운동 삭제에 실패했습니다.', error);
+      setDeleteError('운동 삭제에 실패했습니다.');
+    } finally {
+      setIsDeletePending(false);
+    }
   };
 
   return (
@@ -149,6 +169,8 @@ export function ExerciseSelection() {
       onBack={isEditMode ? () => navigate(-1) : undefined}
       isLoading={!isEditMode && isCreateLoading}
       loadError={!isEditMode ? createLoadError : null}
+      actionError={isEditMode ? deleteError : null}
+      isDeletePending={isEditMode && isDeletePending}
       onRetry={
         isEditMode
           ? undefined

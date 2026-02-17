@@ -123,6 +123,19 @@ describe('ExerciseSelectionView', () => {
     expect(mockOnRetry).toHaveBeenCalledTimes(1);
   });
 
+  it('액션 에러가 있으면 안내 문구를 표시한다', () => {
+    render(
+      <ExerciseSelectionView
+        selectedBodyPart="chest"
+        exercises={mockExercises}
+        actionError="운동 삭제에 실패했습니다."
+        onExerciseSelect={mockOnExerciseSelect}
+      />
+    );
+
+    expect(screen.getByText('운동 삭제에 실패했습니다.')).toBeInTheDocument();
+  });
+
   it('운동 목록에는 운동명만 표시된다', () => {
     render(
       <ExerciseSelectionView
@@ -152,6 +165,25 @@ describe('ExerciseSelectionView', () => {
     expect(screen.getByRole('button', { name: '벤치프레스 관리 메뉴' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '돌아가기' })).toBeInTheDocument();
     expect(screen.queryByText('>')).not.toBeInTheDocument();
+  });
+
+  it('삭제 진행 중이면 관리 메뉴 버튼이 비활성화된다', () => {
+    render(
+      <ExerciseSelectionView
+        selectedBodyPart="chest"
+        exercises={mockExercises}
+        isEditMode
+        isDeletePending
+        onExerciseSelect={mockOnExerciseSelect}
+        onEditExercise={mockOnEditExercise}
+        onDeleteExercise={mockOnDeleteExercise}
+        onBack={mockOnBack}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: '벤치프레스 관리 메뉴' })
+    ).toBeDisabled();
   });
 
   it('편집 모드에서 관리 메뉴 편집/삭제가 동작한다', async () => {

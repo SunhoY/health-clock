@@ -101,6 +101,34 @@ export class RoutinesService {
     }
   }
 
+  async deleteRoutineExerciseByUserId(
+    routineId: string,
+    routineExerciseId: string,
+    userId: string
+  ): Promise<void> {
+    const deletedById =
+      await this.routinesRepository.deleteExerciseByRoutineIdAndExerciseIdAndUserId(
+        routineId,
+        routineExerciseId,
+        userId
+      );
+
+    if (deletedById) {
+      return;
+    }
+
+    const deletedByExerciseCode =
+      await this.routinesRepository.deleteExerciseByRoutineIdAndExerciseCodeAndUserId(
+        routineId,
+        routineExerciseId,
+        userId
+      );
+
+    if (!deletedByExerciseCode) {
+      throw new NotFoundException('Routine exercise not found.');
+    }
+  }
+
   private toCreateRoutineExercises(value: unknown): RoutineExerciseCreateInput[] {
     if (!Array.isArray(value) || value.length === 0) {
       throw new BadRequestException('exercises must include at least one item.');

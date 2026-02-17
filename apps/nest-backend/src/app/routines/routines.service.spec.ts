@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { RoutinesRepository } from './routines.repository';
 import { RoutinesService } from './routines.service';
 
@@ -16,7 +16,9 @@ describe('RoutinesService', () => {
         createdAt: new Date('2026-02-17T10:00:00.000Z'),
         lastUsedAt: null
       }),
-      deleteByRoutineIdAndUserId: jest.fn()
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
     } as unknown as RoutinesRepository;
 
     const service = new RoutinesService(routinesRepository);
@@ -77,7 +79,9 @@ describe('RoutinesService', () => {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn().mockResolvedValue([]),
       createByUserId: jest.fn(),
-      deleteByRoutineIdAndUserId: jest.fn()
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
     } as unknown as RoutinesRepository;
 
     const service = new RoutinesService(routinesRepository);
@@ -104,7 +108,9 @@ describe('RoutinesService', () => {
       findSummariesByUserId: jest.fn(),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
-      deleteByRoutineIdAndUserId: jest.fn().mockResolvedValue(true)
+      deleteByRoutineIdAndUserId: jest.fn().mockResolvedValue(true),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
     } as unknown as RoutinesRepository;
 
     const service = new RoutinesService(routinesRepository);
@@ -114,6 +120,80 @@ describe('RoutinesService', () => {
       'routine-1',
       'user-1'
     );
+  });
+
+  it('should delete routine exercise for the authenticated user', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn(),
+      createByUserId: jest.fn(),
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest
+        .fn()
+        .mockResolvedValue(true),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+    await service.deleteRoutineExerciseByUserId(
+      'routine-1',
+      'routine-exercise-1',
+      'user-1'
+    );
+
+    expect(
+      routinesRepository.deleteExerciseByRoutineIdAndExerciseIdAndUserId
+    ).toHaveBeenCalledWith('routine-1', 'routine-exercise-1', 'user-1');
+  });
+
+  it('should delete routine exercise by exercise code when id lookup misses', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn(),
+      createByUserId: jest.fn(),
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest
+        .fn()
+        .mockResolvedValue(false),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest
+        .fn()
+        .mockResolvedValue(true)
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+    await service.deleteRoutineExerciseByUserId('routine-1', 'bench-press', 'user-1');
+
+    expect(
+      routinesRepository.deleteExerciseByRoutineIdAndExerciseIdAndUserId
+    ).toHaveBeenCalledWith('routine-1', 'bench-press', 'user-1');
+    expect(
+      routinesRepository.deleteExerciseByRoutineIdAndExerciseCodeAndUserId
+    ).toHaveBeenCalledWith('routine-1', 'bench-press', 'user-1');
+  });
+
+  it('should throw not found when routine exercise deletion target is missing', async () => {
+    const routinesRepository = {
+      findSummariesByUserId: jest.fn(),
+      findExercisesByCodes: jest.fn(),
+      createByUserId: jest.fn(),
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest
+        .fn()
+        .mockResolvedValue(false),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest
+        .fn()
+        .mockResolvedValue(false)
+    } as unknown as RoutinesRepository;
+
+    const service = new RoutinesService(routinesRepository);
+
+    await expect(
+      service.deleteRoutineExerciseByUserId(
+        'routine-1',
+        'routine-exercise-404',
+        'user-1'
+      )
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('should return mapped routine summaries for the authenticated user', async () => {
@@ -140,7 +220,9 @@ describe('RoutinesService', () => {
       ]),
       findExercisesByCodes: jest.fn(),
       createByUserId: jest.fn(),
-      deleteByRoutineIdAndUserId: jest.fn()
+      deleteByRoutineIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseIdAndUserId: jest.fn(),
+      deleteExerciseByRoutineIdAndExerciseCodeAndUserId: jest.fn()
     } as unknown as RoutinesRepository;
 
     const service = new RoutinesService(routinesRepository);

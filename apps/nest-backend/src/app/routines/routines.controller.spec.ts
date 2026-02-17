@@ -12,7 +12,8 @@ describe('RoutinesController', () => {
         createdAt: '2026-02-17T10:00:00.000Z',
         lastUsedAt: null
       }),
-      deleteRoutineByUserId: jest.fn()
+      deleteRoutineByUserId: jest.fn(),
+      deleteRoutineExerciseByUserId: jest.fn()
     } as unknown as RoutinesService;
 
     const controller = new RoutinesController(routinesService);
@@ -63,7 +64,8 @@ describe('RoutinesController', () => {
     const routinesService = {
       getRoutineSummariesByUserId: jest.fn(),
       createRoutineByUserId: jest.fn(),
-      deleteRoutineByUserId: jest.fn().mockResolvedValue(undefined)
+      deleteRoutineByUserId: jest.fn().mockResolvedValue(undefined),
+      deleteRoutineExerciseByUserId: jest.fn().mockResolvedValue(undefined)
     } as unknown as RoutinesService;
 
     const controller = new RoutinesController(routinesService);
@@ -75,6 +77,28 @@ describe('RoutinesController', () => {
 
     expect(routinesService.deleteRoutineByUserId).toHaveBeenCalledWith(
       'routine-1',
+      'user-1'
+    );
+  });
+
+  it('should delete routine exercise by current user id', async () => {
+    const routinesService = {
+      getRoutineSummariesByUserId: jest.fn(),
+      createRoutineByUserId: jest.fn(),
+      deleteRoutineByUserId: jest.fn(),
+      deleteRoutineExerciseByUserId: jest.fn().mockResolvedValue(undefined)
+    } as unknown as RoutinesService;
+
+    const controller = new RoutinesController(routinesService);
+    await controller.deleteRoutineExercise('routine-1', 'routine-exercise-1', {
+      id: 'user-1',
+      email: 'user@example.com',
+      provider: 'google'
+    });
+
+    expect(routinesService.deleteRoutineExerciseByUserId).toHaveBeenCalledWith(
+      'routine-1',
+      'routine-exercise-1',
       'user-1'
     );
   });
@@ -99,7 +123,8 @@ describe('RoutinesController', () => {
         }
       ]),
       createRoutineByUserId: jest.fn(),
-      deleteRoutineByUserId: jest.fn()
+      deleteRoutineByUserId: jest.fn(),
+      deleteRoutineExerciseByUserId: jest.fn()
     } as unknown as RoutinesService;
 
     const controller = new RoutinesController(routinesService);
