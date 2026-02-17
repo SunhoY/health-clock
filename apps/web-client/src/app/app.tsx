@@ -7,6 +7,7 @@ import { ExerciseDetail } from '../pages/exercise-detail';
 import { Workout } from '../pages/workout';
 import { WorkoutComplete } from '../pages/workout-complete';
 import { WorkoutSummary } from '../pages/workout-summary';
+import { GoogleAuthCallback } from '../pages/google-auth-callback';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
       <Route path="/workout" element={<Workout />} />
       <Route path="/workout-complete" element={<WorkoutComplete />} />
       <Route path="/workout-summary" element={<WorkoutSummary />} />
+      <Route path="/auth/google/loggedIn" element={<GoogleAuthCallback />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

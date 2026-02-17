@@ -22,4 +22,14 @@ describe('App routing regression', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Health Clock' })).toBeInTheDocument();
   });
+
+  it('google 로그인 콜백 경로가 렌더링된다', async () => {
+    render(
+      <MemoryRouter initialEntries={['/auth/google/loggedIn?error=access_denied']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: '로그인 실패' })).toBeInTheDocument();
+  });
 });
