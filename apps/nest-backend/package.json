@@ -10,6 +10,12 @@
           "command": "pnpm prisma generate --schema prisma/schema.prisma"
         }
       },
+      "prisma-db-push-dev": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "bash -lc 'set -euo pipefail; [ -f .env.local ] || { echo \".env.local is required for dev db sync\"; exit 1; }; set -a; source .env.local; set +a; export POSTGRESQL_SCHEMA=${POSTGRESQL_SCHEMA:-dev}; export DATABASE_URL=\"postgresql://${POSTGRESQL_USERNAME}:${POSTGRESQL_PASSWORD}@${POSTGRESQL_HOST}:${POSTGRESQL_PORT:-5432}/${POSTGRESQL_DB}?schema=${POSTGRESQL_SCHEMA}&sslmode=${POSTGRESQL_SSL_MODE:-disable}\"; pnpm prisma db push --schema prisma/schema.prisma'"
+        }
+      },
       "build": {
         "executor": "nx:run-commands",
         "dependsOn": [
@@ -52,6 +58,10 @@
       "dev": {
         "continuous": true,
         "executor": "nx:run-commands",
+        "dependsOn": [
+          "prisma-generate",
+          "prisma-db-push-dev"
+        ],
         "options": {
           "cwd": "apps/nest-backend",
           "parallel": true,
@@ -67,8 +77,5 @@
         }
       }
     }
-  },
-  "dependencies": {
-    "express": "^5.2.1"
   }
 }

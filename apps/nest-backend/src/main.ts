@@ -10,35 +10,43 @@ import { resolve } from 'path';
 import { AppModule } from './app/app.module';
 
 function loadEnvFromDotEnv(): void {
-  const envPath = resolve(process.cwd(), '.env');
-  if (!existsSync(envPath)) {
-    return;
-  }
+  const nodeEnv = (process.env.NODE_ENV ?? 'development').trim();
+  const envFiles =
+    nodeEnv === 'production'
+      ? ['.env.production', '.env.local', '.env']
+      : ['.env.local', '.env'];
 
-  const lines = readFileSync(envPath, 'utf-8').split(/\r?\n/);
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
+  for (const envFile of envFiles) {
+    const envPath = resolve(process.cwd(), envFile);
+    if (!existsSync(envPath)) {
       continue;
     }
 
-    const separatorIndex = line.indexOf('=');
-    if (separatorIndex < 1) {
-      continue;
-    }
+    const lines = readFileSync(envPath, 'utf-8').split(/\r?\n/);
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) {
+        continue;
+      }
 
-    const key = line.slice(0, separatorIndex).trim();
-    let value = line.slice(separatorIndex + 1).trim();
+      const separatorIndex = line.indexOf('=');
+      if (separatorIndex < 1) {
+        continue;
+      }
 
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
+      const key = line.slice(0, separatorIndex).trim();
+      let value = line.slice(separatorIndex + 1).trim();
 
-    if (!(key in process.env)) {
-      process.env[key] = value;
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      if (!(key in process.env)) {
+        process.env[key] = value;
+      }
     }
   }
 }
